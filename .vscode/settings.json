@@ -1,0 +1,7 @@
+{
+    "python.pythonPath": "/usr/bin/pypy3",
+    "code-runner.executorMap": {
+        "cpp": "cd $dir && g++ $fileName -o $fileNameWithoutExt && $dir$fileNameWithoutExt",
+        "python": "pypy3"
+    }
+}
