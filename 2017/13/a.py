@@ -22,30 +22,36 @@ def do_case(inp: str, sample=False):
         a, b = x.split(": ")
         d[int(a)] = int(b)
     q = max(d.keys())
-    cur = dict(d)
-    for j in d:
-        cur[j] = 0
-    # cur * 2
-    state = 0
-    out = 0
-    for i in range(q+1):
-        dd = False
-        if i in cur and cur[i] == 0:
-            out += i * d[i]
-            dd = True
-            if sample: print("!")
-        # print(i)
-        if sample:
-            print(i, cur)
+    def test(qqq):
+        cur = dict(d)
         for j in d:
-            cur[j] += 1
+            cur[j] = qqq
             cur[j] %= 2*(d[j] - 1)
+        # cur * 2
+        state = 0
+        out = 0
+        for i in range(q+1):
+            dd = False
+            if i in cur and cur[i] == 0:
+                out += i * d[i]
+                dd = True
+                if sample: print("!")
+                return False
+            # print(i)
+            if sample:
+                print(i, cur)
+            for j in d:
+                cur[j] += 1
+                cur[j] %= 2*(d[j] - 1)
+        return True
         
         # if i in cur and cur[i] == 0 and not dd:
         #     out += i * d[i]
         #     if sample: print("!!")
-    if sample:
-        print(q+1, cur)
+    for i in range(100000000):
+        if test(i):
+            print(i)
+            return
         
     print(out)
     return
