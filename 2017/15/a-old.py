@@ -49,6 +49,8 @@ PAIRS = 40 * 1000000
 def do_case(inp: str, sample=False):
     if sample:
         PAIRS = 5
+    else:
+        PAIRS = 40 * 1000000
     ll = inp.splitlines()
     o = []
     for l in ll:
