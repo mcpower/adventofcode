@@ -30,6 +30,9 @@ padd = lambda x, y: [a+b for a, b in zip(x, y)]
 pneg = lambda v: [-i for i in v]
 psub = lambda x, y: [a-b for a, b in zip(x, y)]
 pmul = lambda m, v: [m * i for i in v]
+pnorm1 = lambda v: sum(map(abs, v))
+pnorm2 = lambda v: sum(i*i for i in v)
+pnorminf = lambda v: max(map(abs, v))
 
 GRID_DELTA = [[-1, 0], [1, 0], [0, -1], [0, 1]]
 OCT_DELTA = [[1, 1], [-1, -1], [1, -1], [-1, 1]] + GRID_DELTA
