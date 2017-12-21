@@ -4,6 +4,7 @@ from functools import reduce
 import operator
 import sys
 from collections import Counter, defaultdict, deque
+import math
 sys.setrecursionlimit(100000)
 lmap = lambda func, *iterables: list(map(func, *iterables))
 splitf = lambda s, f=int: lmap(f,s.split())
@@ -30,8 +31,10 @@ padd = lambda x, y: [a+b for a, b in zip(x, y)]
 pneg = lambda v: [-i for i in v]
 psub = lambda x, y: [a-b for a, b in zip(x, y)]
 pmul = lambda m, v: [m * i for i in v]
+pdot = lambda x, y: sum(zip(x, y))
 pnorm1 = lambda v: sum(map(abs, v))
-pnorm2 = lambda v: sum(i*i for i in v)
+pnorm2sq = lambda v: sum(i*i for i in v)
+pnorm2 = lambda v: math.sqrt(pnorm2sq(v))
 pnorminf = lambda v: max(map(abs, v))
 
 GRID_DELTA = [[-1, 0], [1, 0], [0, -1], [0, 1]]
