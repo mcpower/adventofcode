@@ -1,5 +1,6 @@
 from pprint import pprint
 from functools import reduce
+import functools
 import operator
 import sys
 from collections import Counter, defaultdict, deque
@@ -26,6 +27,21 @@ def knot(inp: str, binary=False) -> str:
     else:
         return "".join(hex(i)[2:].zfill(2) for i in sparse)
 
+
+def matmat(a, b):
+    n, k1 = len(a), len(a[0])
+    k2, m = len(b), len(b[0])
+    assert k1 == k2
+    out = [[None] * m for _ in range(n)]
+    for i in range(n):
+        for j in range(m):
+            out[i][j] = sum(a[i][k] * b[k][j] for k in range(k1))
+    return out
+
+
+def matvec(a, v):
+    return [j for i in matmat(a, [[x] for x in v]) for j in i]
+
 padd = lambda x, y: [a+b for a, b in zip(x, y)]
 pneg = lambda v: [-i for i in v]
 psub = lambda x, y: [a-b for a, b in zip(x, y)]
@@ -40,11 +56,13 @@ GRID_DELTA = [[-1, 0], [1, 0], [0, -1], [0, 1]]
 OCT_DELTA = [[1, 1], [-1, -1], [1, -1], [-1, 1]] + GRID_DELTA
 
 
+
 def do_case(inp: str, sample=False):
     sprint = lambda *a, **k: sample and print(*a, **k)
     lines = inp.splitlines()
+    print(sum(map(int, lines)))
+    return  # RETURNED VALUE DOESN'T DO ANYTHING, PRINT THINGS INSTEAD
 
-    return  # RETURNED VALUE DOESN'T DO ANYTHING
 
 
 def parse_samples(l):
