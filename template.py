@@ -1,4 +1,3 @@
-#!/usr/bin/pypy3
 from pprint import pprint
 from functools import reduce
 import operator
@@ -43,13 +42,19 @@ OCT_DELTA = [[1, 1], [-1, -1], [1, -1], [-1, 1]] + GRID_DELTA
 
 def do_case(inp: str, sample=False):
     sprint = lambda *a, **k: sample and print(*a, **k)
-    
     lines = inp.splitlines()
-    return
+
+    return  # RETURNED VALUE DOESN'T DO ANYTHING
 
 
+def parse_samples(l):
+    samples = lmap(str.strip, l)
+    while samples and not samples[-1]:
+        samples.pop()
+    return samples
 
-samples = [
+# Part 1
+samples = parse_samples([
 r"""
 
 """,r"""
@@ -65,10 +70,26 @@ r"""
 """,r"""
 
 """
-]
-samples = lmap(str.strip, samples)
-while samples and not samples[-1]:
-    samples.pop()
+])
+
+# Part 2
+samples = parse_samples([
+r"""
+
+""",r"""
+
+""",r"""
+
+""",r"""
+
+""",r"""
+
+""",r"""
+
+""",r"""
+
+"""
+]) or samples
 
 for sample in samples:
     print("running {}:".format(repr(sample)[:100]))
