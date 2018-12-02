@@ -1,11 +1,13 @@
-from pprint import pprint
-from functools import reduce
+import collections
 import functools
+import itertools
+import math
 import operator
 import sys
 from collections import Counter, defaultdict, deque
-import collections
-import math
+from functools import reduce
+from pprint import pprint
+
 sys.setrecursionlimit(100000)
 lmap = lambda func, *iterables: list(map(func, *iterables))
 splitf = lambda s, f=int: lmap(f,s.split())
@@ -42,6 +44,37 @@ def matmat(a, b):
 
 def matvec(a, v):
     return [j for i in matmat(a, [[x] for x in v]) for j in i]
+
+BLANK = object()
+
+def hamming(a, b):
+    return sum(i is BLANK or j is BLANK or i != j for i, j in itertools.zip_longest(a, b, fillvalue=BLANK))
+
+
+def edit(a, b):
+    n = len(a)
+    m = len(b)
+    dp = [[None] * (m+1) for _ in range(n+1)]
+    dp[n][m] = 0
+    def aux(i, j):
+        assert 0 <= i <= n and 0 <= j <= m
+        if dp[i][j] is not None: return dp[i][j]
+        if i == n:
+            dp[i][j] = 1 + aux(i, j+1)
+        elif j == m:
+            dp[i][j] = 1 + aux(i+1, j)
+        else:
+            dp[i][j] = min(
+                # both move forward
+                (a[i] != b[j]) + aux(i+1, j+1),
+                # a move forward
+                1 + aux(i+1, j),
+                # b move forward
+                1 + aux(i, j+1)
+            )
+        return dp[i][j]
+        
+    return aux(0, 0)
 
 padd = lambda x, y: [a+b for a, b in zip(x, y)]
 pneg = lambda v: [-i for i in v]
