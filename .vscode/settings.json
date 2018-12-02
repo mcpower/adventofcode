@@ -4,4 +4,9 @@
         "python": "pypy3"
     },
     "python.linting.mypyEnabled": false,
+    "terminal.integrated.shell.windows": "C:\\\\Windows\\\\System32\\\\bash.exe",
+    "code-runner.fileDirectoryAsCwd": true,
+    "code-runner.runInTerminal": true,
+    "code-runner.saveFileBeforeRun": true,
+    "code-runner.terminalRoot": "/mnt/",
 }
