@@ -60,7 +60,7 @@ OCT_DELTA = [[1, 1], [-1, -1], [1, -1], [-1, 1]] + GRID_DELTA
 def do_case(inp: str, sample=False):
     sprint = lambda *a, **k: sample and print(*a, **k)
     lines = inp.splitlines()
-    print(sum(map(int, lines)))
+
     return  # RETURNED VALUE DOESN'T DO ANYTHING, PRINT THINGS INSTEAD
 
 
