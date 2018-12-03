@@ -94,7 +94,26 @@ OCT_DELTA = [[1, 1], [-1, -1], [1, -1], [-1, 1]] + GRID_DELTA
 def do_case(inp: str, sample=False):
     sprint = lambda *a, **k: sample and print(*a, **k)
     lines = inp.splitlines()
-    
+    N = 2000
+    grid = [[0] * N for _ in range(N)]
+    out = 0
+    for line in lines:
+        name, _, pos, size = line.split()
+        a, b = pos.split(",")
+        a = int(a)
+        b = int(b[:-1])
+        w, h = size.split("x")
+        w = int(w)
+        h = int(h)
+        for i in range(w):
+            for j in range(h):
+                grid[a+i][b+j] += 1
+                if grid[a+i][b+j] == 2:
+                    out += 1
+    print(out)
+
+
+
     return  # RETURNED VALUE DOESN'T DO ANYTHING, PRINT THINGS INSTEAD
 
 
@@ -108,7 +127,9 @@ def parse_samples(l):
 # Part 1
 samples = parse_samples([
 r"""
-
+#1 @ 1,3: 4x4
+#2 @ 3,1: 4x4
+#3 @ 5,5: 2x2
 """,r"""
 
 """,r"""
