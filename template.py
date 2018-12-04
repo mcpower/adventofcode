@@ -36,10 +36,15 @@ def lset(l, i, v):
     if isinstance(i, int): l[i] = v
     for index in i[:-1]: l = l[index]
     l[i[-1]] = v
+def fst(x): return x[0]
+def snd(x): return x[1]
+def keyvalues(d): return list(d.items())  # keep on forgetting this...
 
 def lmap(func, *iterables): return list(map(func, *iterables))
 def ints(s: str) -> List[int]: return lmap(int, re.findall(r"-?\d+", s))  # thanks mserrano!
+def positive_ints(s: str) -> List[int]: return lmap(int, re.findall(r"\d+", s))  # thanks mserrano!
 def floats(s: str) -> List[float]: return lmap(float, re.findall(r"-?\d+(?:\.\d+)?", s))
+def positive_floats(s: str) -> List[float]: return lmap(float, re.findall(r"\d+(?:\.\d+)?", s))
 def words(s: str) -> List[str]: return re.findall(r"[a-zA-Z]+", s)
 
 def matmat(a, b):
@@ -71,6 +76,7 @@ def edit(a, b) -> int:
 
 
 def do_case(inp: str, sample=False):
+    # READ THE PROBLEM FROM TOP TO BOTTOM OK
     def sprint(*a, **k): sample and print(*a, **k)
     lines = inp.splitlines()
 
