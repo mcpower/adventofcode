@@ -64,7 +64,7 @@ def do_old(players, last_marble):
     # print(blah)
     return max(scores)
 
-class Linked:
+class LinkedDay9:
     def __init__(self, val):
         self.val = val
         self.before = self
@@ -79,7 +79,7 @@ class Linked:
 #     return max(scores)
 
 def do_new(players, last_marble):
-    marbles = Linked(0)
+    marbles = LinkedDay9(0)
     scores = [0] * players
 
     cur_player = 0
@@ -110,7 +110,7 @@ def do_new(players, last_marble):
             # move two forward
             marbles = marbles.after
             marbles = marbles.after
-            asd = Linked(to_add)
+            asd = LinkedDay9(to_add)
 
             asd.before, asd.after = marbles.before, marbles
             asd.before.after = asd
@@ -129,7 +129,7 @@ def do_case(inp: str, sample=False):
     players, last_marble = ints(inp)
     
     # print(do_old(players, last_marble))
-    print(do_new(players, last_marble))
+    print(do_new(players, 100*last_marble))
     # quit()
     return  # RETURNED VALUE DOESN'T DO ANYTHING, PRINT THINGS INSTEAD
 
