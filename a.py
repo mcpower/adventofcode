@@ -1,5 +1,7 @@
 import sys; sys.dont_write_bytecode = True; from utils import *
 """
+To do: ensure Code Runner works (in WSL), have preloaded the day and input in Chrome,
+saved input into the folder, and have utils on the side
 Strings, lists, dicts:
 lmap, ints, positive_ints, floats, positive_floats, words, keyvalues
 
