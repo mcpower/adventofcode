@@ -6,6 +6,7 @@ import math
 import operator
 import re
 import sys
+import typing
 from collections import Counter, defaultdict, deque
 from functools import reduce
 from pprint import pprint
@@ -107,6 +108,131 @@ def edit_distance(a, b) -> int:
     return aux(0, 0)
 #endregion
 
+#region Data Structures
+T = typing.TypeVar("T")
+class Linked(typing.Generic[T], typing.Iterable[T]):
+    """
+    Represents a node in a doubly linked lists.
+
+    Can also be interpreted as a list itself.
+    Consider this to be first in the list.
+    """
+    # item: T
+    # forward: "Linked[T]"
+    # backward: "Linked[T]"
+    def __init__(self, item: T) -> None:
+        self.item = item
+        self.forward = self
+        self.backward = self
+
+    def _join(self, other: "Linked[T]") -> None:
+        self.forward = other
+        other.backward = self
+    
+    def concat(self, other: "Linked[T]") -> None:
+        """
+        Concatenates other AFTER THE END OF THE LIST,
+        i.e. before this current node.
+        """
+        first_self = self
+        last_self = self.backward
+
+        first_other = other
+        last_other = other.backward
+        # self ++ other
+        # consider last_self and first_other
+        last_self._join(first_other)
+        last_other._join(first_self)
+    
+    def concat_immediate(self, other: "Linked[T]") -> None:
+        """
+        Concatenates other IN THE "SECOND" INDEX OF THE LIST
+        i.e. after this current node.
+        """
+        self.forward.concat(other)
+    
+    def append(self, val: T) -> None:
+        """
+        Appends an item AFTER THE END OF THE LIST,
+        i.e. before this current node.
+        """
+        self.concat(Linked(val))
+    
+    def append_immediate(self, val: T) -> None:
+        """
+        Appends an item IN THE "SECOND" INDEX OF THE LIST
+        i.e. after this current node.
+        """
+        self.concat_immediate(Linked(val))
+    
+    def delete(self) -> None:
+        """
+        Deletes this node.
+        After this is called, you should never use this node.
+        """
+        forward = self.forward
+        backward = self.backward
+        forward.backward = backward
+        backward.forward = forward
+    
+    def move(self, n: int) -> "Linked[T]":
+        """
+        Move n nodes forward, or backwards if n is negative.
+        """
+        out = self
+        if n >= 0:
+            for _ in range(n):
+                out = out.forward
+        else:
+            for _ in range(-n):
+                out = out.backward
+        return out
+    
+    def iterate_nodes_inf(self) -> typing.Iterator["Linked[T]"]:
+        cur = self
+        while True:
+            yield cur
+            cur = cur.forward
+    
+    def iterate_nodes(self, count=1) -> typing.Iterator["Linked[T]"]:
+        for node in self.iterate_nodes_inf():
+            if node is self:
+                count -= 1
+                if count < 0:
+                    break
+            yield node
+    
+    def iterate_inf(self) -> typing.Iterator[T]:
+        return map(lambda node: node.item, self.iterate_nodes_inf())
+    
+    def iterate(self, count=1) -> typing.Iterator[T]:
+        return map(lambda node: node.item, self.iterate_nodes(count))
+    
+    def to_list(self):
+        return list(self.iterate())
+    
+    def check_correctness(self) -> None:
+        assert self.forward.backward is self
+        assert self.backward.forward is self
+    
+    def check_correctness_deep(self) -> None:
+        for node in self.iterate_nodes():
+            node.check_correctness()
+    
+    def __iter__(self) -> typing.Iterator[T]:
+        return self.iterate()
+    
+    def __repr__(self) -> str:
+        return "Linked({})".format(self.to_list())
+
+    @classmethod
+    def from_list(cls, l: typing.Iterable[T]) -> "Linked[T]":
+        it = iter(l)
+        out = cls(next(it))
+        for i in it:
+            out.concat(cls(i))
+        return out
+#endregion
 
 #region List/Vector operations
 GRID_DELTA = [[-1, 0], [1, 0], [0, -1], [0, 1]]
