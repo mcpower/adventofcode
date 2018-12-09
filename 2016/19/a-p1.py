@@ -8,10 +8,6 @@ lmap, ints, positive_ints, floats, positive_floats, words, keyvalues
 Algorithms:
 bisect, binary_search, hamming_distance, edit_distance
 
-Data structures:
-Linked, UnionFind
-use deque for queue: q[0], q.append and q.popleft
-
 List/Vector operations:
 GRID_DELTA, OCT_DELTA
 lget, lset, fst, snd
@@ -33,6 +29,13 @@ def do_case(inp: str, sample=False):
     # READ THE PROBLEM FROM TOP TO BOTTOM OK
     def sprint(*a, **k): sample and print(*a, **k)
     lines = inp.splitlines()
+    n = int(inp)
+    circle = Linked.from_list(range(1, n+1))
+    while circle.forward is not circle:
+        circle.forward.delete()
+        circle = circle.forward
+    
+    print(circle.val)
     
     return  # RETURNED VALUE DOESN'T DO ANYTHING, PRINT THINGS INSTEAD
 
@@ -41,9 +44,9 @@ def do_case(inp: str, sample=False):
 run_samples_and_actual([
 # Part 1
 r"""
-
+5
 """,r"""
-
+3001330
 """,r"""
 
 """,r"""
