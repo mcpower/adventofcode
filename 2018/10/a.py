@@ -33,7 +33,7 @@ def asd(points):
     points = lmap(fst, points)
 
     xes = lmap(fst, points)
-    yes = lmap(fst, points)
+    yes = lmap(snd, points)
 
     if max(xes) - min(xes) > 1000:
         return None
@@ -76,7 +76,7 @@ def do_case(inp: str, sample=False):
         q = asd(points)
         seconds += 1
     
-    for line in q[10:] + q[:10]:
+    for line in q:
         print(*line, sep="")
     print(seconds)
     return  # RETURNED VALUE DOESN'T DO ANYTHING, PRINT THINGS INSTEAD
