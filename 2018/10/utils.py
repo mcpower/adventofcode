@@ -18,6 +18,13 @@ sys.setrecursionlimit(100000)
 #region Strings, lists, dicts
 def lmap(func, *iterables):
     return list(map(func, *iterables))
+def make_grid(rows, columns, fill=None):
+    "Returns a grid such that grid[rows-1][columns-1] is a corner."
+    return [[fill for _ in range(columns)] for _ in range(rows)]
+def min_max(l):
+    return min(l), max(l)
+def max_minus_min(l):
+    return max(l) - min(l)
 
 def ints(s: str) -> typing.List[int]:
     return lmap(int, re.findall(r"-?\d+", s))  # thanks mserrano!
@@ -254,11 +261,13 @@ class UnionFind:
     # n: int
     # parents: List[Optional[int]]
     # ranks: List[int]
+    # num_sets: int
 
     def __init__(self, n: int) -> None:
         self.n = n
         self.parents = [None] * n
         self.ranks = [1] * n
+        self.num_sets = n
     
     def find(self, i: int) -> int:
         p = self.parents[i]
@@ -288,6 +297,7 @@ class UnionFind:
         else:
             self.parents[j] = i
             self.ranks[i] += 1
+        self.num_sets -= 1
 #endregion
 
 #region List/Vector operations
@@ -303,6 +313,21 @@ def lset(l, i, v):
         return
     for index in i[:-1]: l = l[index]
     l[i[-1]] = v
+def points_sub_min(points):
+    m = [min(p[i] for p in points) for i in range(len(points[0]))]
+    return [psub(p, m) for p in points]
+def points_to_grid(points, sub_min=True, flip=True):
+    if sub_min:
+        points = points_sub_min(points)
+    if not flip:
+        points = [(y, x) for x, y in points]
+    grid = make_grid(max(map(snd, points))+1, max(map(fst, points))+1, '.')
+    for x, y in points:
+        grid[y][x] = '#'
+    return grid
+def print_grid(grid):
+    for line in grid:
+        print(*line, sep="")
 def fst(x):
     return x[0]
 def snd(x):
