@@ -452,26 +452,30 @@ def get_actual(day=None, year=None):
     with token_files[0].open() as f:
         token = f.read().strip()
     
-    
-    from requests import get as requests_get
-    r = requests_get(
-        "https://adventofcode.com/{}/day/{}/input".format(year, day),
-        cookies={"session": token}
-    )
+    # importing requests takes a long time...
+    # let's do it without requests.
+    import urllib.request
+    import urllib.error
+    import shutil
+    opener = urllib.request.build_opener()
+    opener.addheaders = [("Cookie", "session={}".format(token)), ("User-Agent", "python-requests/2.19.1")]
     print("Sending request...")
-    if r.status_code == 400:
-        print("Auth failed!")
+    url = "https://adventofcode.com/{}/day/{}/input".format(year, day)
+    try:
+        with opener.open(url) as r:
+            with open("input.txt", "wb") as f:
+                shutil.copyfileobj(r, f)
+            print("Input saved!")
+            return open("input.txt").read()
+    except urllib.error.HTTPError as e:
+        status_code = e.getcode()
+        if status_code == 400:
+            print("Auth failed!")
+        elif status_code == 404:
+            print("Day is not out yet????")
+        else:
+            print("Request failed with code {}??".format(status_code))
         return ""
-    if r.status_code == 404:
-        print("Day is not out yet????")
-        return ""
-    if not r.ok:
-        print("Request failed with code {}??".format(r.status_code))
-        return ""
-    with open("input.txt", "w") as f:
-        f.write(r.text)
-    print("Input saved!")
-    return open("input.txt").read()
 
 def run_samples_and_actual(part1, part2, do_case):
     p1 = parse_samples(part1)
