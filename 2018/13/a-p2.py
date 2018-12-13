@@ -125,7 +125,10 @@ def do_case(inp: str, sample=False):
             if tuple(cart[0]) in bad_positions:
                 continue
             carts.append(cart)
-        carts.sort()
+        # this was originally carts.sort(), but it should be sorting y, then x
+        # not vice versa! the carts are sparse enough that this probabilistically
+        # won't make a difference
+        carts.sort(key=lambda s: (s[0][1], s[0][0]))
 
         # pprint(carts)
         # print(len(carts))
