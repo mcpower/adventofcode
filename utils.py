@@ -408,6 +408,71 @@ def parse_samples(l):
     while samples and not samples[-1]: samples.pop()
     return samples
 
+def get_actual(day=None, year=None):
+    try:
+        actual_input = open("input.txt").read()
+        return actual_input
+    except FileNotFoundError:
+        pass
+    from pathlib import Path
+    # let's try grabbing it
+    search_path = Path(".").resolve()
+    try:
+        if day is None:
+            day = int(search_path.name)
+        if year is None:
+            year = int(search_path.parent.name)
+    except ValueError:
+        print("Can't get day and year.")
+        print("Backup: save 'input.txt' into the same folder as this script.")
+        return ""
+    
+    print("{} day {} input not found.".format(year, day))
+    
+    # is it time?
+    from datetime import datetime, timezone, timedelta
+    est = timezone(timedelta(hours=-5))
+    unlock_time = datetime(year, 12, day, tzinfo=est)
+    cur_time = datetime.now(tz=est)
+    delta = unlock_time - cur_time
+    if delta.days >= 0:
+        print("Remaining time until unlock: {}".format(delta))
+        return ""
+
+    while (not list(search_path.glob("*/token.txt"))) and search_path.parent != search_path:
+        search_path = search_path.parent
+    
+    token_files = list(search_path.glob("*/token.txt"))
+    if not token_files:
+        assert search_path.parent == search_path
+        print("Can't find token.txt in a parent directory.")
+        print("Backup: save 'input.txt' into the same folder as this script.")
+        return ""
+    
+    with token_files[0].open() as f:
+        token = f.read().strip()
+    
+    
+    from requests import get as requests_get
+    r = requests_get(
+        "https://adventofcode.com/{}/day/{}/input".format(year, day),
+        cookies={"session": token}
+    )
+    print("Sending request...")
+    if r.status_code == 400:
+        print("Auth failed!")
+        return ""
+    if r.status_code == 404:
+        print("Day is not out yet????")
+        return ""
+    if not r.ok:
+        print("Request failed with code {}??".format(r.status_code))
+        return ""
+    with open("input.txt", "w") as f:
+        f.write(r.text)
+    print("Input saved!")
+    return open("input.txt").read()
+
 def run_samples_and_actual(part1, part2, do_case):
     p1 = parse_samples(part1)
     p2 = parse_samples(part2)
@@ -418,10 +483,7 @@ def run_samples_and_actual(part1, part2, do_case):
         print("-"*10)
         print("#"*10)
 
-    try:
-        actual_input = open("input.txt").read().strip()
-    except FileNotFoundError:
-        actual_input = ""
+    actual_input = get_actual().strip()
 
     if actual_input:
         print("!! running actual: !!")
