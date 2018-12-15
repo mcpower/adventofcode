@@ -52,9 +52,10 @@ def bisect(f, lo=0, hi=None, eps=1e-9):
     """
     lo_bool = f(lo)
     if hi is None:
-        hi = 1
-        while f(hi) == lo_bool:
-            hi *= 2
+        offset = 1
+        while f(lo+offset) == lo_bool:
+            offset *= 2
+        hi = lo + offset
     else:
         assert f(hi) != lo_bool
     while hi - lo > eps:
@@ -76,9 +77,10 @@ def binary_search(f, lo=0, hi=None):
     """
     lo_bool = f(lo)
     if hi is None:
-        hi = 1
-        while f(hi) == lo_bool:
-            hi *= 2
+        offset = 1
+        while f(lo+offset) == lo_bool:
+            offset *= 2
+        hi = lo + offset
     else:
         assert f(hi) != lo_bool
     best_so_far = lo if lo_bool else hi
