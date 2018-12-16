@@ -29,6 +29,14 @@ dict.values()
 dict.items()
 """
 
+import concurrent.futures
+
+relevant_attacks = [4]
+for i in range(5,202):
+    if (200+i-1) // i == (200+relevant_attacks[-1]-1) // relevant_attacks[-1]:
+        continue
+    relevant_attacks.append(i)
+
 def do_case(inp: str, sample=False):
     # READ THE PROBLEM FROM TOP TO BOTTOM OK
     def sprint(*a, **k): sample and print(*a, **k)
@@ -212,6 +220,12 @@ def do_case(inp: str, sample=False):
             # if rounds % 100 == 0:
             #     print(people)
             rounds += 1
+    
+    print("Testing monotonicity:")
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        for i, a in enumerate(executor.map(get_result, relevant_attacks)):
+            print(".X"[bool(a)], end="")
+        print()
     
     asd = binary_search(get_result, 4)
     # print(asd)
