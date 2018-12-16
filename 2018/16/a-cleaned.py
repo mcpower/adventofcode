@@ -115,18 +115,14 @@ def do_case(inp: str, sample=False):
     
     opcode_to_func = dict()
     while len(opcodes) != len(opcode_to_func):
-        found_opcode = None
         for opcode, candidates in opcode_to_candidates.items():
-            assert candidates
             if len(candidates) == 1:
                 opcode_to_func[opcode] = next(iter(candidates))
                 for other_opcode in opcode_to_candidates:
                     opcode_to_candidates[other_opcode] -= candidates
-                found_opcode = opcode
                 break
         else:
             assert False, "can't find unique assignment"
-        del opcode_to_candidates[found_opcode]
 
 
     registers = [0] * 4
