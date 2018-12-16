@@ -147,15 +147,23 @@ def do_case(inp: str, sample=False):
         # print(people)
         people.sort()
         # print(rounds)
-        # for i in range(n):
-        #     s = ""
-        #     for j in range(m):
-        #         asd = [x[ME_TYPE] for x in people if x[POSITION] == [i, j]]
-        #         if not asd:
-        #             s+=grid[i][j]
-        #         else:
-        #             s+=asd[0]
-        #     print(s)
+        # if rounds < 100:
+        #     print()
+        #     print("After {} rounds".format(rounds))
+        #     for i in range(n):
+        #         s = ""
+        #         pp = []
+        #         for j in range(m):
+        #             asd = [x for x in people if x[POSITION] == [i, j]]
+        #             if not asd:
+        #                 s+=grid[i][j]
+        #             else:
+        #                 s+=asd[0][ME_TYPE]
+        #                 pp.extend(asd)
+        #         if pp:
+        #             s += "   "
+        #             s += ", ".join("{}({})".format(x[ME_TYPE], x[HEALTH]) for x in pp)
+        #         print(s)
         # for person in people:
         #     print(person)
         # print("="*10)
