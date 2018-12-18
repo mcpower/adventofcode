@@ -1,5 +1,6 @@
 #region Imports
 import collections
+import copy
 import functools
 import itertools
 import math
@@ -8,6 +9,7 @@ import re
 import sys
 import typing
 from collections import Counter, defaultdict, deque
+from copy import deepcopy
 from functools import reduce
 from pprint import pprint
 #endregion
@@ -27,6 +29,8 @@ def max_minus_min(l):
     return max(l) - min(l)
 def list_diff(x):
     return [b-a for a, b in zip(x, x[1:])]
+def flatten(l):
+    return [i for x in l for i in x]
 
 def ints(s: str) -> typing.List[int]:
     return lmap(int, re.findall(r"-?\d+", s))  # thanks mserrano!
@@ -44,6 +48,56 @@ def keyvalues(d):
 #endregion
 
 #region Algorithms
+class RepeatingSequence:
+    def __init__(self, generator, to_hashable=lambda x: x):
+        """
+        generator should yield the things in the sequence.
+        to_hashable should be used if things aren't nicely hashable.
+        """
+        self.index_to_result = []
+        self.hashable_to_index = dict()
+        for i, result in enumerate(generator):
+            self.index_to_result.append(result)
+            hashable = to_hashable(result)
+            if hashable in self.hashable_to_index:
+                break
+            else:
+                self.hashable_to_index[hashable] = i
+        else:
+            raise Exception("generator terminated without repeat")
+        self.cycle_begin = self.hashable_to_index[hashable]
+        self.cycle_end = i
+        self.cycle_length = self.cycle_end - self.cycle_begin
+
+        self.first_repeated_result = self.index_to_result[self.cycle_begin]
+        self.second_repeated_result = self.index_to_result[self.cycle_end]
+    
+    def cycle_number(self, index):
+        """
+        Returns which 0-indexed cycle index appears in.
+        cycle_number(cycle_begin) is the first index to return 0,
+        cycle_number(cycle_end)   is the first index to return 1,
+        and so on.
+        """
+        if index < self.cycle_begin:
+            print("WARNING: Index is before cycle!!")
+            return 0
+        return (index - self.cycle_begin) // self.cycle_length
+
+    def __getitem__(self, index):
+        """
+        Gets an item in the sequence.
+        If index >= cycle_length, returns the items from the first occurrence
+        of the cycle.
+        Use first_repeated_result and second_repeated_result if needed.
+        """
+        if index < 0:
+            raise Exception("index can't be negative")
+        if index < self.cycle_begin:
+            return self.index_to_result[index]
+        cycle_offset = (index - self.cycle_begin) % self.cycle_length
+        return self.index_to_result[self.cycle_begin + cycle_offset]
+
 def bisect(f, lo=0, hi=None, eps=1e-9):
     """
     Returns a value x such that f(x) is true.
@@ -307,6 +361,16 @@ class UnionFind:
 #region List/Vector operations
 GRID_DELTA = [[-1, 0], [1, 0], [0, -1], [0, 1]]
 OCT_DELTA = [[1, 1], [-1, -1], [1, -1], [-1, 1]] + GRID_DELTA
+def get_neighbours(grid, row, col, deltas, fill=None):
+    n, m = len(grid), len(grid[0])
+    out = []
+    for i, j in deltas:
+        p_row, p_col = row+i, col+j
+        if 0 <= p_row < n and 0 <= p_col < m:
+            out.append(grid[p_row][p_col])
+        elif fill is not None:
+            out.append(fill)
+    return out
 def lget(l, i):
     if len(l) == 2: return l[i[0]][i[1]]
     for index in i: l = l[index]
