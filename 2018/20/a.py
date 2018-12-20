@@ -95,8 +95,8 @@ def do_case(inp: str, sample=False):
     def f(p, l):
         # returns a LIST OF POSITIONS
         seen_thing = (tuple(p), l)
-        # if seen_thing in seen:
-        #     return seen[seen_thing]
+        if seen_thing in seen:
+            return seen[seen_thing]
         
         positions = set([p])
 
