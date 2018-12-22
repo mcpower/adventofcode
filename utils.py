@@ -20,9 +20,12 @@ sys.setrecursionlimit(100000)
 #region Strings, lists, dicts
 def lmap(func, *iterables):
     return list(map(func, *iterables))
-def make_grid(rows, columns, fill=None):
-    "Returns a grid such that grid[rows-1][columns-1] is a corner."
-    return [[fill for _ in range(columns)] for _ in range(rows)]
+def make_grid(*dimensions: typing.List[int], fill=None):
+    "Returns a grid such that 'dimensions' is juuust out of bounds."
+    if len(dimensions) == 1:
+        return [fill for _ in range(dimensions[0])]
+    next_down = make_grid(*dimensions[1:], fill=fill)
+    return [list(next_down) for _ in range(dimensions[0])]
 def min_max(l):
     return min(l), max(l)
 def max_minus_min(l):

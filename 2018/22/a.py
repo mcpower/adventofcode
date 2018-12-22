@@ -36,7 +36,7 @@ def do_case(inp: str, sample=False):
     depth = ints(lines[0])[0]
     tx, ty = tuple(ints(lines[1]))
 
-    dp = make_grid(tx+1000, ty+1000, None)
+    dp = make_grid(tx+1000, ty+1000, fill=None)
     dp[0][0] = 0
     dp[tx][ty] = 0
     def erosion(x, y):
