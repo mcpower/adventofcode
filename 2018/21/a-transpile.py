@@ -182,27 +182,20 @@ def do_case(inp: str, sample=False):
 
     source = make_source(ops)
     source = [line.replace(f"r{INSTRUCTION}", "PC") for line in source]
-    print("PC = r0 = r1 = r2 = r3 = r4 = r5 = 0")
+    print(f"PC = r0 = r1 = r2 = r3 = r4 = r5 = 0")
+    print(f"seen = set()")
+    print(f"last = None")
+    print(f"while PC < {len(source)}:")
+    print(f" if False: pass")
     for i, line in enumerate(source):
+        print(f" elif PC == {i}:")
         if "r0" in line:
-            print(f"seen = set()")
-            print(f"last = None")
-            print(f"def inst{i}():")
-            print(f"    global PC, r0, r1, r2, r3, r4, r5, seen, last")
-            print(f"    if last is None: print(r1)")
-            print(f"    if r1 in seen: print(last); quit()")
-            print(f"    seen.add(r1)")
-            print(f"    last = r1")
-        else:
-            print(f"def inst{i}():")
-            print(f"    global PC, r0, r1, r2, r3, r4, r5")
+            print(f"  if last is None: print(r1)")
+            print(f"  if r1 in seen: print(last); quit()")
+            print(f"  seen.add(r1)")
+            print(f"  last = r1")
         for s in line.splitlines():
-            print(f"    {s}")
-    print(f"inst = [{', '.join(f'inst{i}' for i in range(len(source)))}]")
-    print(f"""
-while PC < {len(source)}:
-    inst[PC]()
-    """.strip())
+            print(f"  {s}")
     
     return  # RETURNED VALUE DOESN'T DO ANYTHING, PRINT THINGS INSTEAD
 
