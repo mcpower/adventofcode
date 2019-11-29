@@ -9,3 +9,5 @@ edition = "2018"
 [dependencies]
 aoc-runner = "0.2"
 aoc-runner-derive = "0.2"
+regex = "1"
+lazy_static = "1.4.0"
