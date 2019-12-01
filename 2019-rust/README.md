@@ -1,0 +1,1 @@
+To run, `cargo install cargo-aoc` then use `cargo aoc` to run.
