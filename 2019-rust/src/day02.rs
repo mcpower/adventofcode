@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 type Int = i64;
 
-fn _run_intcode(mut nums: Vec<Int>) -> Option<Int> {
+fn run_intcode_vec(mut nums: Vec<Int>) -> Option<Int> {
     let mut i = 0usize;
 
     let to_usize = |i: Int| -> Option<usize> {
@@ -56,8 +56,8 @@ fn _run_intcode(mut nums: Vec<Int>) -> Option<Int> {
     Some(nums.get(0)?.clone())
 }
 
-fn run_intcode(nums: &[Int]) -> Option<Int> {
-    _run_intcode(nums.to_vec())
+fn _run_intcode(nums: &[Int]) -> Option<Int> {
+    run_intcode_vec(nums.to_vec())
 }
 
 fn run_intcode_with_input(nums: &[Int], noun: Int, verb: Int) -> Option<Int> {
@@ -67,7 +67,7 @@ fn run_intcode_with_input(nums: &[Int], noun: Int, verb: Int) -> Option<Int> {
     }
     *nums.get_mut(1)? = noun;
     *nums.get_mut(2)? = verb;
-    _run_intcode(nums)
+    run_intcode_vec(nums)
 }
 
 #[aoc(day02, part1)]
@@ -99,8 +99,8 @@ pub fn part2(inp: &str) -> String {
 
 #[test]
 fn day02samples() {
-    assert_eq!(run_intcode(&[1,0,0,0,99]), Some(2));
-    assert_eq!(run_intcode(&[2,3,0,3,99]), Some(2));
-    assert_eq!(run_intcode(&[2,4,4,5,99,0]), Some(2));
-    assert_eq!(run_intcode(&[1,1,1,4,99,5,6,0,99]), Some(30));
+    assert_eq!(_run_intcode(&[1,0,0,0,99]), Some(2));
+    assert_eq!(_run_intcode(&[2,3,0,3,99]), Some(2));
+    assert_eq!(_run_intcode(&[2,4,4,5,99,0]), Some(2));
+    assert_eq!(_run_intcode(&[1,1,1,4,99,5,6,0,99]), Some(30));
 }
