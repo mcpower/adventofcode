@@ -1,18 +1,26 @@
-#[aoc(dayXX, part1)]
+// #[aoc(dayXX, part1)]
 pub fn part1(inp: &str) -> String {
+    _part1(inp, false)
+}
+
+fn _part1(inp: &str, _sample: bool) -> String {
     "".to_string()
 }
 
-#[aoc(dayXX, part2)]
+// #[aoc(dayXX, part2)]
 pub fn part2(inp: &str) -> String {
+    _part2(inp, false)
+}
+
+fn _part2(inp: &str, _sample: bool) -> String {
     "".to_string()
 }
 
 #[test]
 fn dayXXsamples() {
-// assert_eq!(part1(r#"
-// "#.trim_start_matches('\n')), "");
+// assert_eq!(_part1(r#"
+// "#.trim_start_matches('\n'), true), "");
 
-// assert_eq!(part2(r#"
-// "#.trim_start_matches('\n')), "");
+// assert_eq!(_part2(r#"
+// "#.trim_start_matches('\n'), true), "");
 }
