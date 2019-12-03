@@ -1,42 +1,64 @@
 use std::collections::{HashSet, HashMap};
+
+fn parse(inp: &str) -> Vec<Vec<&str>> {
+    inp.trim().lines().map(|s| s.split(',').collect()).collect()
+}
+
+fn run_wire(dirs: &[&str]) -> HashMap<(i64, i64), u64> {
+    let mut cur = (0, 0);
+    let mut dist = 0;
+    let mut seen = HashMap::new();
+    seen.insert(cur, dist);
+    for direction in dirs {
+        let mut chars = direction.chars();
+        let way = match chars.next() {
+            Some('R') => (0, 1),
+            Some('L') => (0, -1),
+            Some('U') => (-1, 0),
+            Some('D') => (1, 0),
+            _ => break,
+        };
+        // dbg!(&direction);
+        let num = chars.collect::<String>().parse().unwrap();
+        for _ in 0..num {
+            cur.0 += way.0;
+            cur.1 += way.1;
+            dist += 1;
+
+            seen.insert(cur, dist);
+        }
+    }
+    seen
+}
+
+fn to_keys<T: std::clone::Clone + std::cmp::Eq + std::hash::Hash, U>(map: &HashMap<T, U>) -> HashSet<T> {
+    map.keys().map(|item| item.clone()).collect::<HashSet<_>>()
+}
+
 #[aoc(day03, part1)]
 pub fn part1(inp: &str) -> String {
     _part1(inp, false)
 }
 
 fn _part1(inp: &str, _sample: bool) -> String {
-    let wires: Vec<Vec<&str>> = inp.trim().lines().map(|s| s.split(',').collect()).collect();
-    let mut seens = vec![];
-    for dirs  in wires {
-        let mut cur = (0, 0);
-        let mut seen = HashSet::new();
-        seen.insert(cur);
-        for direction in dirs {
-            let mut way = (0, 0);
-            match direction.chars().nth(0) {
-                Some('R') => way.1 += 1,
-                Some('L') => way.1 -= 1,
-                Some('U') => way.0 -= 1,
-                Some('D') => way.0 += 1,
-                _ => break,
-            }
-            // dbg!(&direction);
-            let num: u64 = direction.chars().skip(1).collect::<String>().parse().unwrap();
-            for i in 0..num {
-                cur.0 += way.0;
-                cur.1 += way.1;
+    let dirs = parse(inp);
+    let wires: Vec<_> = dirs.into_iter().map(|dirs| run_wire(&dirs[..])).collect();
     
-                seen.insert(cur);
-            }
-        }
-        seens.push(seen);
-    }
-    
-    let mut s = seens[0].intersection(&seens[1]);
+    let mut wire_coords_iter = wires
+        .iter()
+        .map(|wire| to_keys(&wire));
 
-    s.into_iter()
-        .filter(|&&q| q != (0, 0))
-        .map(|(a, b)| i64::abs(a.clone()) + i64::abs(b.clone()))
+    let first_wire_coords = wire_coords_iter.next().unwrap();
+    let intersections = wire_coords_iter
+        .fold(
+            first_wire_coords,
+            |acc, x|
+                acc.intersection(&x).map(|pair| pair.clone()).collect()
+        );
+
+    intersections.into_iter()
+        .map(|(a, b)| i64::abs(a) + i64::abs(b))
+        .filter(|&i| i != 0)
         .min()
         .unwrap()
         .to_string()
@@ -48,42 +70,24 @@ pub fn part2(inp: &str) -> String {
 }
 
 fn _part2(inp: &str, _sample: bool) -> String {
-    let wires: Vec<Vec<&str>> = inp.trim().lines().map(|s| s.split(',').collect()).collect();
-    let mut seens = vec![];
-    for dirs  in wires {
-        let mut cur = (0, 0);
-        let mut dist = 0i64;
-        let mut seen = HashMap::new();
-        seen.insert(cur, dist);
-        for direction in dirs {
-            let mut way = (0, 0);
-            match direction.chars().nth(0) {
-                Some('R') => way.1 += 1,
-                Some('L') => way.1 -= 1,
-                Some('U') => way.0 -= 1,
-                Some('D') => way.0 += 1,
-                _ => break,
-            }
-            // dbg!(&direction);
-            let num: u64 = direction.chars().skip(1).collect::<String>().parse().unwrap();
-            for i in 0..num {
-                cur.0 += way.0;
-                cur.1 += way.1;
-                dist += 1;
+    let dirs = parse(inp);
+    let wires: Vec<_> = dirs.into_iter().map(|dirs| run_wire(&dirs[..])).collect();
     
-                seen.insert(cur, dist);
-            }
-        }
-        seens.push(seen);
-    }
-    
-    let first: HashSet<(i64, i64)> = seens[0].keys().map(|q| q.clone()).collect::<HashSet<_>>();
-    let second: HashSet<(i64, i64)> = seens[1].keys().map(|q| q.clone()).collect::<HashSet<_>>();
-    let mut s = first.intersection(&second);
+    let mut wire_coords_iter = wires
+        .iter()
+        .map(|wire| to_keys(&wire));
 
-    s.into_iter()
-        .filter(|&&q| q != (0, 0))
-        .map(|s| seens[0].get(s).unwrap() + seens[1].get(s).unwrap())
+    let first_wire_coords = wire_coords_iter.next().unwrap();
+    let intersections = wire_coords_iter
+        .fold(
+            first_wire_coords,
+            |acc, x|
+                acc.intersection(&x).map(|pair| pair.clone()).collect()
+        );
+
+    intersections.into_iter()
+        .map(|coord| wires.iter().map(|wire| wire.get(&coord).unwrap()).sum::<u64>())
+        .filter(|&i| i != 0)
         .min()
         .unwrap()
         .to_string()
@@ -116,7 +120,4 @@ assert_eq!(_part2(r#"
 R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51
 U98,R91,D20,R16,D67,R40,U7,R15,U6,R7
 "#.trim_start_matches('\n'), true), "410");
-
-// assert_eq!(part2(r#"
-// "#.trim_start_matches('\n'), true), "");
 }
