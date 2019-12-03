@@ -1,28 +1,47 @@
-fn _run_intcode(mut nums: Vec<usize>) -> Option<usize> {
-    let mut i = 0;
+use std::convert::TryFrom;
+
+type Int = i64;
+
+fn _run_intcode(mut nums: Vec<Int>) -> Option<Int> {
+    let mut i = 0usize;
+
+    let to_usize = |i: Int| -> Option<usize> {
+        usize::try_from(i).ok()
+    };
+
+    let _add_to_i = |val: Int| -> Option<()> {
+        i = if val.is_negative() {
+            i.checked_sub(to_usize(val.checked_abs()?)?)?
+        } else {
+            i.checked_add(to_usize(val)?)?
+        };
+        Some(())
+    };
+    
     loop {
         match nums.get(i)? {
             // add
             1 => {
                 const VALUES: usize = 4;
 
-                let mut arguments = [0usize; VALUES];
+                let mut arguments = [0; VALUES];
                 // guaranteed not to panic in copy_from_slice
                 arguments.copy_from_slice(nums.get(i..i+VALUES)?);
                 let [_, lhs, rhs, target] = arguments;
 
-                *nums.get_mut(target)? = nums.get(lhs)? + nums.get(rhs)?;
+                *nums.get_mut(to_usize(target)?)? = nums.get(to_usize(lhs)?)? + nums.get(to_usize(rhs)?)?;
                 i += VALUES;
             },
             // multiply
             2 => {
                 const VALUES: usize = 4;
 
-                let mut arguments = [0usize; VALUES];
+                let mut arguments = [0; VALUES];
+                // guaranteed not to panic in copy_from_slice
                 arguments.copy_from_slice(nums.get(i..i+VALUES)?);
                 let [_, lhs, rhs, target] = arguments;
-                
-                *nums.get_mut(target)? = nums.get(lhs)? * nums.get(rhs)?;
+
+                *nums.get_mut(to_usize(target)?)? = nums.get(to_usize(lhs)?)? * nums.get(to_usize(rhs)?)?;
                 i += VALUES;
             },
             // halt
@@ -37,11 +56,11 @@ fn _run_intcode(mut nums: Vec<usize>) -> Option<usize> {
     Some(nums.get(0)?.clone())
 }
 
-fn run_intcode(nums: &[usize]) -> Option<usize> {
+fn run_intcode(nums: &[Int]) -> Option<Int> {
     _run_intcode(nums.to_vec())
 }
 
-fn run_intcode_with_input(nums: &[usize], noun: usize, verb: usize) -> Option<usize> {
+fn run_intcode_with_input(nums: &[Int], noun: Int, verb: Int) -> Option<Int> {
     let mut nums = nums.to_vec();
     if nums.len() <= 0 {
         dbg!(&nums);
@@ -53,20 +72,20 @@ fn run_intcode_with_input(nums: &[usize], noun: usize, verb: usize) -> Option<us
 
 #[aoc(day02, part1)]
 pub fn part1(inp: &str) -> String {
-    let nums: Vec<usize> = inp.trim().split(',')
+    let nums: Vec<Int> = inp.trim().split(',')
         .map(|s| s.parse().unwrap())
         .collect();
-
+    
     run_intcode_with_input(&nums[..], 12, 2).unwrap().to_string()
 }
 
 #[aoc(day02, part2)]
 pub fn part2(inp: &str) -> String {
-    let nums: Vec<usize> = inp.trim().split(',')
+    let nums: Vec<Int> = inp.trim().split(',')
         .map(|s| s.parse().unwrap())
         .collect();
     
-    const TARGET: usize = 19690720;
+    const TARGET: Int = 19690720;
 
     for noun in 0..=99 {
         for verb in 0..=99 {
