@@ -27,7 +27,7 @@ fn run_wire(dirs: &[&str]) -> HashMap<Point, u64> {
             cur.1 += way.1;
             dist += 1;
 
-            seen.insert(cur, dist);
+            seen.entry(cur).or_insert(dist);
         }
     }
     seen
