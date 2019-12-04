@@ -15,8 +15,7 @@ fn _part1(inp: &str, _sample: bool) -> String {
         .filter(|s| {
             s.chars().zip(s.chars().skip(1)).any(|(x, y)| x == y)
         })
-        .collect::<Vec<_>>()
-        .len()
+        .count()
         .to_string()
 }
 
@@ -49,8 +48,7 @@ fn _part2(inp: &str, _sample: bool) -> String {
             });
             out || streak == 2
         })
-        .collect::<Vec<_>>()
-        .len()
+        .count()
         .to_string()
 }
 
