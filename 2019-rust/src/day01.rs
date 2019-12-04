@@ -37,9 +37,9 @@ fn part2(inp: &str, _sample: bool) -> String {
 fn day01samples() {
 assert_eq!(part1(r#"
 100756
-"#.trim_start_matches('\n'), true), "33583");
+"#.trim_matches('\n'), true), "33583");
 
 assert_eq!(part2(r#"
 100756
-"#.trim_start_matches('\n'), true), "50346");
+"#.trim_matches('\n'), true), "50346");
 }

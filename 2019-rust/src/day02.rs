@@ -72,7 +72,7 @@ fn run_intcode_with_input(nums: &[Int], noun: Int, verb: Int) -> Option<Int> {
 
 #[aoc(day02, part1)]
 pub fn part1(inp: &str) -> String {
-    let nums: Vec<Int> = inp.trim().split(',')
+    let nums: Vec<Int> = inp.split(',')
         .map(|s| s.parse().unwrap())
         .collect();
     
@@ -81,7 +81,7 @@ pub fn part1(inp: &str) -> String {
 
 #[aoc(day02, part2)]
 pub fn part2(inp: &str) -> String {
-    let nums: Vec<Int> = inp.trim().split(',')
+    let nums: Vec<Int> = inp.split(',')
         .map(|s| s.parse().unwrap())
         .collect();
     
