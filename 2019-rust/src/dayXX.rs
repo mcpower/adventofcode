@@ -19,8 +19,8 @@ fn _part2(inp: &str, _sample: bool) -> String {
 #[test]
 fn dayXXsamples() {
 // assert_eq!(_part1(r#"
-// "#.trim_start_matches('\n'), true), "");
+// "#.trim_matches('\n'), true), "");
 
 // assert_eq!(_part2(r#"
-// "#.trim_start_matches('\n'), true), "");
+// "#.trim_matches('\n'), true), "");
 }
