@@ -1,10 +1,12 @@
 use std::collections::{HashSet, HashMap};
 
+type Point = (i64, i64);
+
 fn parse(inp: &str) -> Vec<Vec<&str>> {
     inp.trim().lines().map(|s| s.split(',').collect()).collect()
 }
 
-fn run_wire(dirs: &[&str]) -> HashMap<(i64, i64), u64> {
+fn run_wire(dirs: &[&str]) -> HashMap<Point, u64> {
     let mut cur = (0, 0);
     let mut dist = 0;
     let mut seen = HashMap::new();
@@ -31,8 +33,21 @@ fn run_wire(dirs: &[&str]) -> HashMap<(i64, i64), u64> {
     seen
 }
 
+fn intersections(wires: &[HashMap<Point, u64>]) -> HashSet<Point> {
+    let mut wire_coords_iter = wires
+        .iter()
+        .map(|wire| to_keys(&wire));
+
+    let first_wire_coords = wire_coords_iter.next().unwrap();
+    wire_coords_iter
+        .fold(
+            first_wire_coords,
+            |acc, x| acc.intersection(&x).cloned().collect()
+        )
+}
+
 fn to_keys<T: std::clone::Clone + std::cmp::Eq + std::hash::Hash, U>(map: &HashMap<T, U>) -> HashSet<T> {
-    map.keys().map(|item| item.clone()).collect::<HashSet<_>>()
+    map.keys().cloned().collect::<HashSet<_>>()
 }
 
 #[aoc(day03, part1)]
@@ -44,19 +59,8 @@ fn _part1(inp: &str, _sample: bool) -> String {
     let dirs = parse(inp);
     let wires: Vec<_> = dirs.into_iter().map(|dirs| run_wire(&dirs[..])).collect();
     
-    let mut wire_coords_iter = wires
-        .iter()
-        .map(|wire| to_keys(&wire));
-
-    let first_wire_coords = wire_coords_iter.next().unwrap();
-    let intersections = wire_coords_iter
-        .fold(
-            first_wire_coords,
-            |acc, x|
-                acc.intersection(&x).map(|pair| pair.clone()).collect()
-        );
-
-    intersections.into_iter()
+    intersections(&wires[..])
+        .into_iter()
         .map(|(a, b)| i64::abs(a) + i64::abs(b))
         .filter(|&i| i != 0)
         .min()
@@ -72,20 +76,9 @@ pub fn part2(inp: &str) -> String {
 fn _part2(inp: &str, _sample: bool) -> String {
     let dirs = parse(inp);
     let wires: Vec<_> = dirs.into_iter().map(|dirs| run_wire(&dirs[..])).collect();
-    
-    let mut wire_coords_iter = wires
-        .iter()
-        .map(|wire| to_keys(&wire));
 
-    let first_wire_coords = wire_coords_iter.next().unwrap();
-    let intersections = wire_coords_iter
-        .fold(
-            first_wire_coords,
-            |acc, x|
-                acc.intersection(&x).map(|pair| pair.clone()).collect()
-        );
-
-    intersections.into_iter()
+    intersections(&wires[..])
+        .into_iter()
         .map(|coord| wires.iter().map(|wire| wire.get(&coord).unwrap()).sum::<u64>())
         .filter(|&i| i != 0)
         .min()
