@@ -3,14 +3,13 @@ use std::iter;
 
 type Int = i64;
 
-fn run_intcode_vec(mut nums: Vec<Int>, mut input: Vec<Int>, output: &mut Vec<Int>) -> Option<Int> {
+fn run_intcode_with_output(nums: &[Int], input: &[Int], input_idx: &mut usize, output: &mut Vec<Int>) -> Option<()> {
+    let mut nums = nums.to_vec();
     let mut i = 0usize;
 
     let to_usize = |i: Int| -> Option<usize> {
         usize::try_from(i).ok()
     };
-
-    input.reverse();
 
     let _add_to_i = |val: Int| -> Option<()> {
         i = if val.is_negative() {
@@ -28,13 +27,26 @@ fn run_intcode_vec(mut nums: Vec<Int>, mut input: Vec<Int>, output: &mut Vec<Int
             v.push((val % 10) as u8);
             val /= 10;
         }
-        v.iter().cloned().chain(iter::repeat(0)).take(10).collect::<Vec<_>>()
+        // guaranteed not to terminate
+        v.into_iter().chain(iter::repeat(0)).peekable()
     };
 
     loop {
         let mut opcode = *nums.get(i)?;
         let instruction = opcode % 100;
         opcode /= 100;
+
+        let mut modes_it = get_modes(opcode);
+
+        let mut use_mode = |val: Int| {
+            let out = match modes_it.next().unwrap() {
+                0 => *nums.get(to_usize(val)?)?,
+                1 => val,
+                _ => return None,
+            };
+            Some(out)
+        };
+
         match instruction {
             // add
             1 => {
@@ -44,21 +56,8 @@ fn run_intcode_vec(mut nums: Vec<Int>, mut input: Vec<Int>, output: &mut Vec<Int
                 arguments.copy_from_slice(nums.get(i..i+VALUES)?);
                 let [_, lhs, rhs, target] = arguments;
 
-                let modes = get_modes(opcode);
-
-                let lhs_val = match modes[0] {
-                    0 => *nums.get(to_usize(lhs)?)?,
-                    1 => lhs,
-                    _ => return None,
-                };
-
-                let rhs_val = match modes[1] {
-                    0 => *nums.get(to_usize(rhs)?)?,
-                    1 => rhs,
-                    _ => return None,
-                };
-
-                *nums.get_mut(to_usize(target)?)? = lhs_val + rhs_val;
+                *nums.get_mut(to_usize(target)?)? = use_mode(lhs)? + use_mode(rhs)?;
+                assert_eq!(*modes_it.peek().unwrap(), 0);
                 i += VALUES;
             }
             // multiply
@@ -69,21 +68,8 @@ fn run_intcode_vec(mut nums: Vec<Int>, mut input: Vec<Int>, output: &mut Vec<Int
                 arguments.copy_from_slice(nums.get(i..i+VALUES)?);
                 let [_, lhs, rhs, target] = arguments;
 
-                let modes = get_modes(opcode);
-
-                let lhs_val = match modes[0] {
-                    0 => *nums.get(to_usize(lhs)?)?,
-                    1 => lhs,
-                    _ => return None,
-                };
-
-                let rhs_val = match modes[1] {
-                    0 => *nums.get(to_usize(rhs)?)?,
-                    1 => rhs,
-                    _ => return None,
-                };
-
-                *nums.get_mut(to_usize(target)?)? = lhs_val * rhs_val;
+                *nums.get_mut(to_usize(target)?)? = use_mode(lhs)? * use_mode(rhs)?;
+                assert_eq!(*modes_it.peek().unwrap(), 0);
                 i += VALUES;
             }
             // get input
@@ -93,9 +79,11 @@ fn run_intcode_vec(mut nums: Vec<Int>, mut input: Vec<Int>, output: &mut Vec<Int
                 let mut arguments = [0; VALUES];
                 arguments.copy_from_slice(nums.get(i..i+VALUES)?);
                 let [_, target] = arguments;
-                let inp = input.pop()?;
+                let inp = *input.get(*input_idx)?;
+                *input_idx += 1;
 
                 *nums.get_mut(to_usize(target)?)? = inp;
+                assert_eq!(*modes_it.peek().unwrap(), 0);
                 i += VALUES;
             }
             // output
@@ -105,13 +93,7 @@ fn run_intcode_vec(mut nums: Vec<Int>, mut input: Vec<Int>, output: &mut Vec<Int
                 let mut arguments = [0; VALUES];
                 arguments.copy_from_slice(nums.get(i..i+VALUES)?);
                 let [_, out] = arguments;
-                let modes = get_modes(opcode);
-                let out_val = match modes[0] {
-                    0 => *nums.get(to_usize(out)?)?,
-                    1 => out,
-                    _ => return None,
-                };
-                output.push(out_val);
+                output.push(use_mode(out)?);
 
                 i += VALUES;
             }
@@ -122,19 +104,8 @@ fn run_intcode_vec(mut nums: Vec<Int>, mut input: Vec<Int>, output: &mut Vec<Int
                 let mut arguments = [0; VALUES];
                 arguments.copy_from_slice(nums.get(i..i+VALUES)?);
                 let [_, param, dest] = arguments;
-                let modes = get_modes(opcode);
-                let param_val = match modes[0] {
-                    0 => *nums.get(to_usize(param)?)?,
-                    1 => param,
-                    _ => return None,
-                };
-                let dest_val = match modes[1] {
-                    0 => *nums.get(to_usize(dest)?)?,
-                    1 => dest,
-                    _ => return None,
-                };
-                if param_val != 0 {
-                    i = to_usize(dest_val)?;
+                if use_mode(param)? != 0 {
+                    i = to_usize(use_mode(dest)?)?;
                 } else {
                     i += VALUES;
                 }
@@ -146,19 +117,8 @@ fn run_intcode_vec(mut nums: Vec<Int>, mut input: Vec<Int>, output: &mut Vec<Int
                 let mut arguments = [0; VALUES];
                 arguments.copy_from_slice(nums.get(i..i+VALUES)?);
                 let [_, param, dest] = arguments;
-                let modes = get_modes(opcode);
-                let param_val = match modes[0] {
-                    0 => *nums.get(to_usize(param)?)?,
-                    1 => param,
-                    _ => return None,
-                };
-                let dest_val = match modes[1] {
-                    0 => *nums.get(to_usize(dest)?)?,
-                    1 => dest,
-                    _ => return None,
-                };
-                if param_val == 0 {
-                    i = to_usize(dest_val)?;
+                if use_mode(param)? == 0 {
+                    i = to_usize(use_mode(dest)?)?;
                 } else {
                     i += VALUES;
                 }
@@ -170,20 +130,9 @@ fn run_intcode_vec(mut nums: Vec<Int>, mut input: Vec<Int>, output: &mut Vec<Int
                 let mut arguments = [0; VALUES];
                 arguments.copy_from_slice(nums.get(i..i+VALUES)?);
                 let [_, lhs, rhs, target] = arguments;
-                let modes = get_modes(opcode);
-                let lhs_val = match modes[0] {
-                    0 => *nums.get(to_usize(lhs)?)?,
-                    1 => lhs,
-                    _ => return None,
-                };
 
-                let rhs_val = match modes[1] {
-                    0 => *nums.get(to_usize(rhs)?)?,
-                    1 => rhs,
-                    _ => return None,
-                };
-                *nums.get_mut(to_usize(target)?)? = (lhs_val < rhs_val) as Int;
-
+                *nums.get_mut(to_usize(target)?)? = (use_mode(lhs)? < use_mode(rhs)?) as Int;
+                assert_eq!(*modes_it.peek().unwrap(), 0);
                 i += VALUES;
             }
             // equals
@@ -193,20 +142,9 @@ fn run_intcode_vec(mut nums: Vec<Int>, mut input: Vec<Int>, output: &mut Vec<Int
                 let mut arguments = [0; VALUES];
                 arguments.copy_from_slice(nums.get(i..i+VALUES)?);
                 let [_, lhs, rhs, target] = arguments;
-                let modes = get_modes(opcode);
-                let lhs_val = match modes[0] {
-                    0 => *nums.get(to_usize(lhs)?)?,
-                    1 => lhs,
-                    _ => return None,
-                };
 
-                let rhs_val = match modes[1] {
-                    0 => *nums.get(to_usize(rhs)?)?,
-                    1 => rhs,
-                    _ => return None,
-                };
-                *nums.get_mut(to_usize(target)?)? = (lhs_val == rhs_val) as Int;
-
+                *nums.get_mut(to_usize(target)?)? = (use_mode(lhs)? == use_mode(rhs)?) as Int;
+                assert_eq!(*modes_it.peek().unwrap(), 0);
                 i += VALUES;
             }
             // halt
@@ -218,7 +156,15 @@ fn run_intcode_vec(mut nums: Vec<Int>, mut input: Vec<Int>, output: &mut Vec<Int
             }
         }
     }
-    Some(nums.get(0)?.clone())
+    Some(())
+}
+
+// (halted, inputs_consumed, outputs)
+fn run_intcode(nums: &[Int], input: &[Int]) -> (bool, usize, Vec<Int>) {
+    let mut output = vec![];
+    let mut consumed = 0usize;
+    let result = run_intcode_with_output(nums, input, &mut consumed, &mut output).is_some();
+    (result, consumed, output)
 }
 
 #[aoc(day05, part1)]
@@ -231,9 +177,9 @@ fn _part1(inp: &str, _sample: bool) -> String {
         .map(|s| s.parse().unwrap())
         .collect();
 
-    let input: Vec<Int> = vec![1];
-    let mut output: Vec<Int> = vec![];
-    let _returned = run_intcode_vec(nums, input, &mut output);
+    let (halted, consumed, mut output) = run_intcode(nums.as_slice(), &[1]);
+    assert!(halted);
+    assert_eq!(consumed, 1);
     let out = output.pop().unwrap();
     assert!(output.iter().all(|x| *x == 0));
     out.to_string()
@@ -249,9 +195,9 @@ fn _part2(inp: &str, _sample: bool) -> String {
         .map(|s| s.parse().unwrap())
         .collect();
 
-    let input: Vec<Int> = vec![5];
-    let mut output: Vec<Int> = vec![];
-    let _returned = run_intcode_vec(nums, input, &mut output);
+    let (halted, consumed, mut output) = run_intcode(nums.as_slice(), &[5]);
+    assert!(halted);
+    assert_eq!(consumed, 1);
     let out = output.pop().unwrap();
     assert!(output.iter().all(|x| *x == 0));
     out.to_string()
@@ -259,15 +205,8 @@ fn _part2(inp: &str, _sample: bool) -> String {
 
 #[test]
 fn day05samples() {
-    let mut output: Vec<Int> = vec![];
-    run_intcode_vec(vec![3,0,4,0,99],vec![1], &mut output);
-    assert_eq!(output, vec![1]);
-    output.clear();
-    assert_eq!(run_intcode_vec(vec![1002,4,3,4,33],vec![1], &mut output), Some(1002));
-    run_intcode_vec(vec![3,9,8,9,10,9,4,9,99,-1,8],vec![8], &mut output);
-    assert_eq!(output, vec![1]);
-    output.clear();
-    run_intcode_vec(vec![3,9,8,9,10,9,4,9,99,-1,8],vec![9], &mut output);
-    assert_eq!(output, vec![0]);
-    output.clear();
+    assert_eq!(run_intcode(&[3,0,4,0,99],&[1]), (true, 1, vec![1]));
+    assert_eq!(run_intcode(&[1002,4,3,4,33],&[]), (true, 0, vec![]));
+    assert_eq!(run_intcode(&[3,9,8,9,10,9,4,9,99,-1,8],&[8]), (true, 1, vec![1]));
+    assert_eq!(run_intcode(&[3,9,8,9,10,9,4,9,99,-1,8],&[9]), (true, 1, vec![0]));
 }
