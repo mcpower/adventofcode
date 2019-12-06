@@ -36,13 +36,7 @@ pub fn part2(inp: &str) -> String {
 }
 
 fn ancestors<'a>(s: &'a str, parents: &HashMap<&'a str, &'a str>) -> HashSet<&'a str> {
-    let mut s = s;
-    let mut out = HashSet::new();
-    while s != "COM" {
-        out.insert(s);
-        s = parents.get(s).unwrap();
-    }
-    out
+    std::iter::successors(Some(s), |i| parents.get(i).cloned()).collect()
 }
 
 fn _part2(inp: &str, _sample: bool) -> String {
