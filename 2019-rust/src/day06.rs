@@ -7,13 +7,11 @@ pub fn part1(inp: &str) -> String {
 
 fn _part1(inp: &str, _sample: bool) -> String {
     let mut parents: HashMap<String, String> = HashMap::new();
-    let mut children: HashMap<String, Vec<String>> = HashMap::new();
     for s in inp.lines() {
         let mut it = s.split(')');
         let from = it.next().unwrap().to_string();
         let to = it.next().unwrap().to_string();
 
-        children.entry(from.clone()).or_insert_with(Vec::new).push(to.clone());
         parents.insert(to, from);
     }
 
@@ -36,13 +34,11 @@ pub fn part2(inp: &str) -> String {
 
 fn _part2(inp: &str, _sample: bool) -> String {
     let mut parents: HashMap<String, String> = HashMap::new();
-    let mut children: HashMap<String, Vec<String>> = HashMap::new();
     for s in inp.lines() {
         let mut it = s.split(')');
         let from = it.next().unwrap().to_string();
         let to = it.next().unwrap().to_string();
 
-        children.entry(from.clone()).or_insert_with(Vec::new).push(to.clone());
         parents.insert(to, from);
     }
 
