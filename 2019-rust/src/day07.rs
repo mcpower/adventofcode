@@ -308,20 +308,20 @@ impl ICProgram {
 }
 
 fn try_inputs(nums: &[Int], input: &[Int]) -> Option<Int> {
-    if let &[a, b, c, d, e] = input {
-        let set = [a, b, c, d, e].iter().cloned().collect::<HashSet<Int>>();
-        if set.len() != 5 {
+    let set = input.iter().cloned().collect::<HashSet<Int>>();
+    if set.len() != input.len() {
+        return None;
+    }
+    let mut programs: Vec<_> = std::iter::repeat(ICProgram::new(nums)).take(input.len()).collect();
+    let mut last = 0;
+    for (program, &phase) in programs.iter_mut().zip(input.iter()) {
+        let mut output = program.run(&[phase, last]);
+        if !output.is_halted() {
             return None;
         }
-        let a_res = ICProgram::new(nums).run(&[a, 0]).output.pop()?;
-        let b_res = ICProgram::new(nums).run(&[b, a_res]).output.pop()?;
-        let c_res = ICProgram::new(nums).run(&[c, b_res]).output.pop()?;
-        let d_res = ICProgram::new(nums).run(&[d, c_res]).output.pop()?;
-        let e_res = ICProgram::new(nums).run(&[e, d_res]).output.pop()?;
-        Some(e_res)
-    } else {
-        None
+        last = output.output.pop()?;
     }
+    Some(last)
 }
 
 #[aoc(day07, part1)]
@@ -351,48 +351,31 @@ fn _part1(inp: &str, _sample: bool) -> String {
 }
 
 fn try_inputs_2(nums: &[Int], input: &[Int]) -> Option<Int> {
-    if let &[a, b, c, d, e] = input {
-        let set = [a, b, c, d, e].iter().cloned().collect::<HashSet<Int>>();
-        if set.len() != 5 {
+    let set = input.iter().cloned().collect::<HashSet<Int>>();
+    if set.len() != input.len() {
+        return None;
+    }
+    // create programs
+    let mut programs: Vec<_> = std::iter::repeat(ICProgram::new(nums)).take(input.len()).collect();
+    // give them their phases
+    for (program, &phase) in programs.iter_mut().zip(input.iter()) {
+        let mut output = program.run_single(phase);
+        if !output.is_awaiting_input() {
             return None;
         }
-        let mut a_prog = ICProgram::new(nums);
-        let mut b_prog = ICProgram::new(nums);
-        let mut c_prog = ICProgram::new(nums);
-        let mut d_prog = ICProgram::new(nums);
-        let mut e_prog = ICProgram::new(nums);
-        if !a_prog.run_single(a).is_awaiting_input()
-            || !b_prog.run_single(b).is_awaiting_input()
-            || !c_prog.run_single(c).is_awaiting_input()
-            || !d_prog.run_single(d).is_awaiting_input()
-            || !e_prog.run_single(e).is_awaiting_input()
-        {
-            return None;
+    }
+    // loop
+    let mut last = 0;
+    loop {
+        let mut halted = false;
+        for program in &mut programs {
+            let mut output = program.run_single(last);
+            last = output.output.pop()?;
+            halted |= output.is_halted();
         }
-        let mut last = 0;
-        loop {
-            let mut a_output = a_prog.run_single(last);
-            last = a_output.output.pop()?;
-            let mut b_output = b_prog.run_single(last);
-            last = b_output.output.pop()?;
-            let mut c_output = c_prog.run_single(last);
-            last = c_output.output.pop()?;
-            let mut d_output = d_prog.run_single(last);
-            last = d_output.output.pop()?;
-            let mut e_output = e_prog.run_single(last);
-            last = e_output.output.pop()?;
-            if a_output.is_halted()
-                || b_output.is_halted()
-                || c_output.is_halted()
-                || d_output.is_halted()
-                || e_output.is_halted()
-            {
-                break;
-            }
+        if halted {
+            return Some(last);
         }
-        Some(last)
-    } else {
-        None
     }
 }
 
