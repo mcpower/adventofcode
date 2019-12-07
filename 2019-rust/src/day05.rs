@@ -3,8 +3,7 @@ use std::iter;
 
 type Int = i64;
 
-fn run_intcode_with_output(nums: &[Int], input: &[Int], input_idx: &mut usize, output: &mut Vec<Int>) -> Option<()> {
-    let mut nums = nums.to_vec();
+fn _run_intcode(nums: &mut Vec<Int>, input: &[Int], input_idx: &mut usize, output: &mut Vec<Int>) -> Option<()> {
     let mut i = 0usize;
 
     let to_usize = |i: Int| -> Option<usize> {
@@ -163,7 +162,8 @@ fn run_intcode_with_output(nums: &[Int], input: &[Int], input_idx: &mut usize, o
 fn run_intcode(nums: &[Int], input: &[Int]) -> (bool, usize, Vec<Int>) {
     let mut output = vec![];
     let mut consumed = 0usize;
-    let result = run_intcode_with_output(nums, input, &mut consumed, &mut output).is_some();
+    let mut nums = nums.to_vec();
+    let result = _run_intcode(&mut nums, input, &mut consumed, &mut output).is_some();
     (result, consumed, output)
 }
 
