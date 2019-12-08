@@ -30,14 +30,14 @@ fn _part2(inp: &str, sample: bool) -> String {
     let chars: Vec<_> = inp.chars().collect();
     let cols = if sample { 2 } else { 25 };
     let rows = if sample { 2 } else { 6 };
-    let layers: Vec<_> = chars.chunks(cols * rows).collect();
+    let layers = chars.chunks(cols * rows);
 
     (0..rows)
         .map(|row| {
             (0..cols)
                 .map(|col| {
                     layers
-                        .iter()
+                        .clone()
                         .map(|layer| layer[row * cols + col])
                         .find(|&c| c != '2')
                         .map(|pixel| if pixel == '1' { '#' } else { '.' })
