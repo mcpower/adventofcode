@@ -9,5 +9,6 @@ pub mod day04;
 pub mod day05;
 pub mod day06;
 pub mod day07;
+pub mod day08;
 
 aoc_lib! { year = 2019 }
