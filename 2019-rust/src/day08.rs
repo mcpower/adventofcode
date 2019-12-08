@@ -35,13 +35,14 @@ fn _part2(inp: &str, sample: bool) -> String {
     (0..rows)
         .map(|row| {
             (0..cols)
-                .filter_map(|col| {
+                .map(|col| {
                     layers
                         .iter()
                         .map(|layer| layer[row * cols + col])
                         .find(|&c| c != '2')
+                        .map(|pixel| if pixel == '1' { '#' } else { '.' })
+                        .unwrap_or('?')
                 })
-                .map(|pixel| if pixel == '1' { '#' } else { '.' })
                 .collect::<String>()
         })
         .collect::<Vec<_>>()
