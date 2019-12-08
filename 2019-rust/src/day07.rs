@@ -98,6 +98,7 @@ fn get_mode(full_opcode: Int, i: u32) -> Int {
     (full_opcode / 10i64.pow(i + 2 - 1)) % 10
 }
 
+#[allow(dead_code)]
 impl ICProgram {
     fn get_arg(&self, i: usize) -> ICStepResult<Int> {
         use ICException::*;
@@ -345,7 +346,7 @@ fn _part1(inp: &str, _sample: bool) -> String {
             for c in 0..=4 {
                 for d in 0..=4 {
                     for e in 0..=4 {
-                        if let Some(x) = try_inputs(nums.as_slice(), &[a, b, c, d, e]) {
+                        if let Some(x) = try_inputs(&nums, &[a, b, c, d, e]) {
                             out = out.max(x);
                         }
                     }
@@ -366,7 +367,7 @@ fn try_inputs_2(nums: &[Int], input: &[Int]) -> Option<Int> {
     let mut programs: Vec<_> = std::iter::repeat(ICProgram::new(nums)).take(input.len()).collect();
     // give them their phases
     for (program, &phase) in programs.iter_mut().zip(input.iter()) {
-        let mut output = program.run_single(phase);
+        let output = program.run_single(phase);
         if !output.is_awaiting_input() {
             return None;
         }
@@ -403,7 +404,7 @@ fn _part2(inp: &str, _sample: bool) -> String {
             for c in 5..=9 {
                 for d in 5..=9 {
                     for e in 5..=9 {
-                        if let Some(x) = try_inputs_2(nums.as_slice(), &[a, b, c, d, e]) {
+                        if let Some(x) = try_inputs_2(&nums, &[a, b, c, d, e]) {
                             out = out.max(x);
                         }
                     }
