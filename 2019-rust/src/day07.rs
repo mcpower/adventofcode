@@ -33,7 +33,7 @@ enum ICSuccess {
     // currently waiting for more input
     AwaitingInput,
     // we halted
-    Halted,
+    Halt,
 }
 
 // something bad happened - state of program is now right before this exception
@@ -68,7 +68,7 @@ struct ICOutput {
 
 impl ICOutput {
     fn is_halted(&self) -> bool {
-        self.result == Ok(ICSuccess::Halted)
+        self.result == Ok(ICSuccess::Halt)
     }
 
     fn is_awaiting_input(&self) -> bool {
@@ -118,7 +118,7 @@ impl ICProgram {
         Ok(*out)
     }
 
-    fn get_mut_arg(&mut self, i: usize) -> ICStepResult<&mut Int> {
+    fn get_arg_mut(&mut self, i: usize) -> ICStepResult<&mut Int> {
         use ICException::*;
         use ICStepFailure::*;
         let memory_index = self.ip + i;
@@ -159,7 +159,7 @@ impl ICProgram {
                 if new_ip >= self.memory.len() {
                     return Err(Exception(OOBIPWrite(new_ip as Int)));
                 }
-                *self.get_mut_arg(3)? = self.get_arg(1)? + self.get_arg(2)?;
+                *self.get_arg_mut(3)? = self.get_arg(1)? + self.get_arg(2)?;
                 self.ip = new_ip;
             }
             // multiply
@@ -168,7 +168,7 @@ impl ICProgram {
                 if new_ip >= self.memory.len() {
                     return Err(Exception(OOBIPWrite(new_ip as Int)));
                 }
-                *self.get_mut_arg(3)? = self.get_arg(1)? * self.get_arg(2)?;
+                *self.get_arg_mut(3)? = self.get_arg(1)? * self.get_arg(2)?;
                 self.ip = new_ip;
             }
             // get input
@@ -177,7 +177,7 @@ impl ICProgram {
                 if new_ip >= self.memory.len() {
                     return Err(Exception(OOBIPWrite(new_ip as Int)));
                 }
-                *self.get_mut_arg(1)? = *input.ok_or(NeedInput)?;
+                *self.get_arg_mut(1)? = *input.ok_or(NeedInput)?;
                 self.ip = new_ip;
                 return Ok(InputConsumed);
             }
@@ -223,7 +223,7 @@ impl ICProgram {
                 if new_ip >= self.memory.len() {
                     return Err(Exception(OOBIPWrite(new_ip as Int)));
                 }
-                *self.get_mut_arg(3)? = (self.get_arg(1)? < self.get_arg(2)?) as Int;
+                *self.get_arg_mut(3)? = (self.get_arg(1)? < self.get_arg(2)?) as Int;
                 self.ip = new_ip;
             }
             // equals
@@ -232,7 +232,7 @@ impl ICProgram {
                 if new_ip >= self.memory.len() {
                     return Err(Exception(OOBIPWrite(new_ip as Int)));
                 }
-                *self.get_mut_arg(3)? = (self.get_arg(1)? == self.get_arg(2)?) as Int;
+                *self.get_arg_mut(3)? = (self.get_arg(1)? == self.get_arg(2)?) as Int;
                 self.ip = new_ip;
             }
             // halt
@@ -248,6 +248,10 @@ impl ICProgram {
     }
 
     fn run(&mut self, input: &[Int]) -> ICOutput {
+        use ICStepSuccess::*;
+        use ICStepFailure::*;
+        use ICSuccess::*;
+
         let mut output = vec![];
         let mut inputs_consumed = 0usize;
 
@@ -255,37 +259,32 @@ impl ICProgram {
             let step_result = self.step(input.get(inputs_consumed));
             match step_result {
                 Ok(success) => match success {
-                    ICStepSuccess::InputConsumed => {
+                    InputConsumed => {
                         inputs_consumed += 1;
                     }
-                    ICStepSuccess::Output(out_value) => {
+                    Output(out_value) => {
                         output.push(out_value);
                     }
-                    ICStepSuccess::Halted => {
+                    Halted => {
                         return ICOutput {
-                            result: Ok(ICSuccess::Halted),
+                            result: Ok(Halt),
                             output,
                             inputs_consumed,
                         };
                     }
-                    ICStepSuccess::Success => {}
+                    Success => {}
                 },
-                Err(failure) => match failure {
-                    ICStepFailure::NeedInput => {
-                        return ICOutput {
-                            result: Ok(ICSuccess::AwaitingInput),
-                            output,
-                            inputs_consumed,
-                        };
-                    }
-                    ICStepFailure::Exception(exception) => {
-                        return ICOutput {
-                            result: Err(exception),
-                            output,
-                            inputs_consumed,
-                        }
-                    }
-                },
+                Err(failure) => {
+                    let result = match failure {
+                        NeedInput => Ok(AwaitingInput),
+                        Exception(exception) => Err(exception)
+                    };
+                    return ICOutput {
+                        result,
+                        output,
+                        inputs_consumed,
+                    };
+                }
             }
         }
     }
@@ -301,6 +300,14 @@ impl ICProgram {
     fn new(nums: &[Int]) -> ICProgram {
         ICProgram {
             memory: nums.to_vec(),
+            ip: 0,
+            halted: false,
+        }
+    }
+
+    fn from_str(inp: &str) -> ICProgram {
+        ICProgram {
+            memory: inp.trim().split(',').map(|s| s.parse().unwrap()).collect(),
             ip: 0,
             halted: false,
         }
@@ -370,6 +377,9 @@ fn try_inputs_2(nums: &[Int], input: &[Int]) -> Option<Int> {
         let mut halted = false;
         for program in &mut programs {
             let mut output = program.run_single(last);
+            if output.is_error() {
+                return None;
+            }
             last = output.output.pop()?;
             halted |= output.is_halted();
         }
