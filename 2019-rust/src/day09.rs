@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::convert::TryFrom;
 
 type Int = i64;
@@ -300,9 +300,10 @@ impl ICProgram {
         ICProgram::from_vec(inp.trim().split(',').map(|s| s.parse().unwrap()).collect())
     }
 
-    fn from_vec(inp: Vec<Int>) -> ICProgram {
+    fn from_vec(mut memory: Vec<Int>) -> ICProgram {
+        memory.extend(std::iter::repeat(0).take(memory.len()));
         ICProgram {
-            memory: inp,
+            memory,
             oob: HashMap::new(),
             ip: 0,
             halted: false,
@@ -332,13 +333,13 @@ fn _part2(inp: &str, _sample: bool) -> String {
 #[test]
 fn day09samples() {
     assert_eq!(
-        ICProgram::new(&[104, 1125899906842624, 99])
+        ICProgram::new(&[104, 1_125_899_906_842_624, 99])
             .run_no_input()
             .output,
-        &[1125899906842624]
+        &[1_125_899_906_842_624]
     );
     assert!(
-        ICProgram::new(&[1102, 34915192, 34915192, 7, 4, 7, 99, 0])
+        ICProgram::new(&[1102, 34_915_192, 34_915_192, 7, 4, 7, 99, 0])
             .run_no_input()
             .output[0]
             > 1000_0000_0000_0000
