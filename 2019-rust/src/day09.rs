@@ -89,8 +89,13 @@ struct ICProgram {
     base: Int,
 }
 
+#[allow(dead_code)]
 fn to_usize(i: Int) -> Option<usize> {
     usize::try_from(i).ok()
+}
+
+fn to_usize_err(i: Int, err: impl Fn(Int) -> ICException) -> ICStepResult<usize> {
+    usize::try_from(i).map_err(|_| ICStepFailure::Exception(err(i)))
 }
 
 fn get_mode(full_opcode: Int, i: u32) -> Int {
@@ -125,13 +130,13 @@ impl ICProgram {
         let value = self.get_mem(memory_index);
         let out = match get_mode(full_opcode, i as u32) {
             0 => {
-                let idx = to_usize(value).ok_or(Exception(NegativeArgumentsRead(value)))?;
+                let idx = to_usize_err(value, NegativeArgumentsRead)?;
                 self.get_mem(idx)
             },
             1 => value,
             2 => {
                 let address = self.base + value;
-                let idx = to_usize(address).ok_or(Exception(NegativeArgumentsRead(address)))?;
+                let idx = to_usize_err(address, NegativeArgumentsRead)?;
                 self.get_mem(idx)
             }
             _ => return Err(Exception(UnknownOpcode(full_opcode))),
@@ -147,13 +152,13 @@ impl ICProgram {
         let out = match get_mode(full_opcode, i as u32) {
             0 => {
                 let address = self.get_mem(memory_index);
-                let idx = to_usize(address).ok_or(Exception(NegativeResultWrite(address)))?;
+                let idx = to_usize_err(address, NegativeResultWrite)?;
                 self.get_mem_mut(idx)
             }
             1 => self.get_mem_mut(memory_index),
             2 => {
                 let address = self.base + self.get_mem(memory_index);
-                let idx = to_usize(address).ok_or(Exception(NegativeResultWrite(address)))?;
+                let idx = to_usize_err(address, NegativeResultWrite)?;
                 self.get_mem_mut(idx)
             }
             _ => return Err(Exception(UnknownOpcode(full_opcode))),
@@ -198,8 +203,7 @@ impl ICProgram {
             // jump if true
             5 => {
                 self.ip = if self.get_arg(1)? != 0 {
-                    let new_ip_int = self.get_arg(2)?;
-                    to_usize(new_ip_int).ok_or(Exception(NegativeIPWrite(new_ip_int)))?
+                    to_usize_err(self.get_arg(2)?, NegativeIPWrite)?
                 } else {
                     self.ip + 3
                 };
@@ -207,8 +211,7 @@ impl ICProgram {
             // jump if false
             6 => {
                 self.ip = if self.get_arg(1)? == 0 {
-                    let new_ip_int = self.get_arg(2)?;
-                    to_usize(new_ip_int).ok_or(Exception(NegativeIPWrite(new_ip_int)))?
+                    to_usize_err(self.get_arg(2)?, NegativeIPWrite)?
                 } else {
                     self.ip + 3
                 };
