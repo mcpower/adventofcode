@@ -1,4 +1,4 @@
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap, HashSet};
 use std::convert::TryFrom;
 
 type Int = i64;
@@ -43,18 +43,14 @@ enum ICException {
     AlreadyHalted,
     // includes invalid addressing modes
     UnknownOpcode(Int),
-    // attempting to set IP to something OOB
-    // includes "instruction was successfully executed and the IP now points past the end"
-    OOBIPWrite(Int),
-    // trying to read a parameter of an instruction OOB
-    // example: 1,0,0
-    OOBParameterRead(usize),
-    // trying to read an argument of an instruction OOB
-    // example: 1,100,0,0,99
-    OOBArgumentsRead(Int),
-    // trying to write an result of an instruction OOB
-    // example: 1,0,0,100,99
-    OOBResultWrite(Int),
+    // attempting to set IP to something negative
+    NegativeIPWrite(Int),
+    // trying to read an argument from a negative index
+    // example: 1,-1,0,0,99
+    NegativeArgumentsRead(Int),
+    // trying to write a result to a negative index
+    // example: 1,0,0,-1,99
+    NegativeResultWrite(Int),
 }
 
 type ICResult<T> = Result<T, ICException>;
@@ -66,6 +62,7 @@ struct ICOutput {
     inputs_consumed: usize,
 }
 
+#[allow(dead_code)]
 impl ICOutput {
     fn is_halted(&self) -> bool {
         self.result == Ok(ICSuccess::Halt)
@@ -125,14 +122,17 @@ impl ICProgram {
         use ICStepFailure::*;
         let memory_index = self.ip + i;
         let full_opcode = self.get_mem(self.ip);
-        let out = self
-            .get_mem(memory_index);
+        let value = self.get_mem(memory_index);
         let out = match get_mode(full_opcode, i as u32) {
-            0 => self.get_mem(to_usize(out).ok_or(Exception(OOBArgumentsRead(out)))?),
-            1 => out,
+            0 => {
+                let idx = to_usize(value).ok_or(Exception(NegativeArgumentsRead(value)))?;
+                self.get_mem(idx)
+            },
+            1 => value,
             2 => {
-                let blah = to_usize(self.base + out).ok_or(Exception(OOBArgumentsRead(out)))?;
-                self.get_mem(blah)
+                let address = self.base + value;
+                let idx = to_usize(address).ok_or(Exception(NegativeArgumentsRead(address)))?;
+                self.get_mem(idx)
             }
             _ => return Err(Exception(UnknownOpcode(full_opcode))),
         };
@@ -144,22 +144,21 @@ impl ICProgram {
         use ICStepFailure::*;
         let memory_index = self.ip + i;
         let full_opcode = self.get_mem(self.ip);
-        match get_mode(full_opcode, i as u32) {
+        let out = match get_mode(full_opcode, i as u32) {
             0 => {
-                let address = self
-                    .get_mem(memory_index);
-                let idx = to_usize(address).ok_or(Exception(OOBResultWrite(address)))?;
-                Ok(self.get_mem_mut(idx))
+                let address = self.get_mem(memory_index);
+                let idx = to_usize(address).ok_or(Exception(NegativeResultWrite(address)))?;
+                self.get_mem_mut(idx)
             }
-            1 => Ok(self.get_mem_mut(memory_index)),
+            1 => self.get_mem_mut(memory_index),
             2 => {
-                let offset = self
-                    .get_mem(memory_index);
-                let idx = to_usize(self.base + offset).ok_or(Exception(OOBResultWrite(offset)))?;
-                Ok(self.get_mem_mut(idx))
+                let address = self.base + self.get_mem(memory_index);
+                let idx = to_usize(address).ok_or(Exception(NegativeResultWrite(address)))?;
+                self.get_mem_mut(idx)
             }
-            _ => Err(Exception(UnknownOpcode(full_opcode))),
-        }
+            _ => return Err(Exception(UnknownOpcode(full_opcode))),
+        };
+        Ok(out)
     }
 
     fn step(&mut self, input: Option<&Int>) -> ICStepResult<ICStepSuccess> {
@@ -176,93 +175,57 @@ impl ICProgram {
         match full_opcode % 100 {
             // add
             1 => {
-                let new_ip = self.ip + 4;
-                if new_ip >= self.memory.len() {
-                    return Err(Exception(OOBIPWrite(new_ip as Int)));
-                }
                 *self.get_arg_mut(3)? = self.get_arg(1)? + self.get_arg(2)?;
-                self.ip = new_ip;
+                self.ip += 4;
             }
             // multiply
             2 => {
-                let new_ip = self.ip + 4;
-                if new_ip >= self.memory.len() {
-                    return Err(Exception(OOBIPWrite(new_ip as Int)));
-                }
                 *self.get_arg_mut(3)? = self.get_arg(1)? * self.get_arg(2)?;
-                self.ip = new_ip;
+                self.ip += 4;
             }
             // get input
             3 => {
-                let new_ip = self.ip + 2;
-                if new_ip >= self.memory.len() {
-                    return Err(Exception(OOBIPWrite(new_ip as Int)));
-                }
                 *self.get_arg_mut(1)? = *input.ok_or(NeedInput)?;
-                self.ip = new_ip;
+                self.ip += 2;
                 return Ok(InputConsumed);
             }
             // output
             4 => {
-                let new_ip = self.ip + 2;
-                if new_ip >= self.memory.len() {
-                    return Err(Exception(OOBIPWrite(new_ip as Int)));
-                }
                 let out = self.get_arg(1)?;
-                self.ip = new_ip;
+                self.ip += 2;
                 return Ok(Output(out));
             }
             // jump if true
             5 => {
-                let new_ip = if self.get_arg(1)? != 0 {
+                self.ip = if self.get_arg(1)? != 0 {
                     let new_ip_int = self.get_arg(2)?;
-                    to_usize(new_ip_int).ok_or(Exception(OOBIPWrite(new_ip_int)))?
+                    to_usize(new_ip_int).ok_or(Exception(NegativeIPWrite(new_ip_int)))?
                 } else {
                     self.ip + 3
                 };
-                if new_ip >= self.memory.len() {
-                    return Err(Exception(OOBIPWrite(new_ip as Int)));
-                }
-                self.ip = new_ip;
             }
             // jump if false
             6 => {
-                let new_ip = if self.get_arg(1)? == 0 {
+                self.ip = if self.get_arg(1)? == 0 {
                     let new_ip_int = self.get_arg(2)?;
-                    to_usize(new_ip_int).ok_or(Exception(OOBIPWrite(new_ip_int)))?
+                    to_usize(new_ip_int).ok_or(Exception(NegativeIPWrite(new_ip_int)))?
                 } else {
                     self.ip + 3
                 };
-                if new_ip >= self.memory.len() {
-                    return Err(Exception(OOBIPWrite(new_ip as Int)));
-                }
-                self.ip = new_ip;
             }
             // less than
             7 => {
-                let new_ip = self.ip + 4;
-                if new_ip >= self.memory.len() {
-                    return Err(Exception(OOBIPWrite(new_ip as Int)));
-                }
                 *self.get_arg_mut(3)? = (self.get_arg(1)? < self.get_arg(2)?) as Int;
-                self.ip = new_ip;
+                self.ip += 4;
             }
             // equals
             8 => {
-                let new_ip = self.ip + 4;
-                if new_ip >= self.memory.len() {
-                    return Err(Exception(OOBIPWrite(new_ip as Int)));
-                }
                 *self.get_arg_mut(3)? = (self.get_arg(1)? == self.get_arg(2)?) as Int;
-                self.ip = new_ip;
+                self.ip += 4;
             }
             9 => {
-                let new_ip = self.ip + 2;
-                if new_ip >= self.memory.len() {
-                    return Err(Exception(OOBIPWrite(new_ip as Int)));
-                }
                 self.base += self.get_arg(1)?;
-                self.ip = new_ip;
+                self.ip += 2;
             }
             // halt
             99 => {
@@ -277,8 +240,8 @@ impl ICProgram {
     }
 
     fn run(&mut self, input: &[Int]) -> ICOutput {
-        use ICStepSuccess::*;
         use ICStepFailure::*;
+        use ICStepSuccess::*;
         use ICSuccess::*;
 
         let mut output = vec![];
@@ -306,7 +269,7 @@ impl ICProgram {
                 Err(failure) => {
                     let result = match failure {
                         NeedInput => Ok(AwaitingInput),
-                        Exception(exception) => Err(exception)
+                        Exception(exception) => Err(exception),
                     };
                     return ICOutput {
                         result,
@@ -327,18 +290,16 @@ impl ICProgram {
     }
 
     fn new(nums: &[Int]) -> ICProgram {
-        ICProgram {
-            memory: nums.to_vec(),
-            oob: HashMap::new(),
-            ip: 0,
-            halted: false,
-            base: 0,
-        }
+        ICProgram::from_vec(nums.to_vec())
     }
 
     fn from_str(inp: &str) -> ICProgram {
+        ICProgram::from_vec(inp.trim().split(',').map(|s| s.parse().unwrap()).collect())
+    }
+
+    fn from_vec(inp: Vec<Int>) -> ICProgram {
         ICProgram {
-            memory: inp.trim().split(',').map(|s| s.parse().unwrap()).collect(),
+            memory: inp,
             oob: HashMap::new(),
             ip: 0,
             halted: false,
@@ -346,7 +307,6 @@ impl ICProgram {
         }
     }
 }
-
 
 #[aoc(day09, part1)]
 pub fn part1(inp: &str) -> String {
@@ -354,9 +314,7 @@ pub fn part1(inp: &str) -> String {
 }
 
 fn _part1(inp: &str, _sample: bool) -> String {
-    let mut program = ICProgram::from_str(inp);
-    let mut blah = dbg!(program.run_single(1));
-    blah.output.pop().unwrap().to_string()
+    ICProgram::from_str(inp).run_single(1).output.pop().unwrap().to_string()
 }
 
 #[aoc(day09, part2)]
@@ -365,15 +323,25 @@ pub fn part2(inp: &str) -> String {
 }
 
 fn _part2(inp: &str, _sample: bool) -> String {
-    let mut program = ICProgram::from_str(inp);
-    let mut blah = dbg!(program.run_single(2));
-    blah.output.pop().unwrap().to_string()
+    ICProgram::from_str(inp).run_single(2).output.pop().unwrap().to_string()
 }
 
 #[test]
 fn day09samples() {
-    assert_eq!(ICProgram::new(&[104,1125899906842624,99]).run_no_input().output, &[1125899906842624]);
-    assert!(ICProgram::new(&[1102,34915192,34915192,7,4,7,99,0]).run_no_input().output[0] > 1000_0000_0000_0000);
-    let quine = &[109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99];
-    let x = ICProgram::new(quine).run_no_input();
+    assert_eq!(
+        ICProgram::new(&[104, 1125899906842624, 99])
+            .run_no_input()
+            .output,
+        &[1125899906842624]
+    );
+    assert!(
+        ICProgram::new(&[1102, 34915192, 34915192, 7, 4, 7, 99, 0])
+            .run_no_input()
+            .output[0]
+            > 1000_0000_0000_0000
+    );
+    let quine = &[
+        109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99,
+    ];
+    assert_eq!(ICProgram::new(quine).run_no_input().output, quine);
 }
