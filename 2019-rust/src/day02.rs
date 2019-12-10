@@ -62,9 +62,6 @@ fn _run_intcode(nums: &[Int]) -> Option<Int> {
 
 fn run_intcode_with_input(nums: &[Int], noun: Int, verb: Int) -> Option<Int> {
     let mut nums = nums.to_vec();
-    if nums.len() <= 0 {
-        dbg!(&nums);
-    }
     *nums.get_mut(1)? = noun;
     *nums.get_mut(2)? = verb;
     run_intcode_vec(nums)

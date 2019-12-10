@@ -3,6 +3,7 @@ use std::iter;
 
 type Int = i64;
 
+#[allow(clippy::cognitive_complexity)]
 fn _run_intcode(nums: &mut Vec<Int>, input: &[Int], input_idx: &mut usize, output: &mut Vec<Int>) -> Option<()> {
     let mut i = 0usize;
 
