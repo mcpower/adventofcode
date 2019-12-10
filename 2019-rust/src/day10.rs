@@ -187,6 +187,7 @@ fn _part2(inp: &str, _sample: bool) -> String {
     todo.iter().flatten().take(200).last().unwrap().to_string()
 }
 
+#[rustfmt::skip]
 #[test]
 fn day10samples() {
     assert_eq!(_part1(r#"

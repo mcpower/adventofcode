@@ -132,7 +132,7 @@ impl ICProgram {
             0 => {
                 let idx = to_usize_err(value, NegativeArgumentsRead)?;
                 self.get_mem(idx)
-            },
+            }
             1 => value,
             2 => {
                 let address = self.base + value;
@@ -318,7 +318,12 @@ pub fn part1(inp: &str) -> String {
 }
 
 fn _part1(inp: &str, _sample: bool) -> String {
-    ICProgram::from_str(inp).run_single(1).output.pop().unwrap().to_string()
+    ICProgram::from_str(inp)
+        .run_single(1)
+        .output
+        .pop()
+        .unwrap()
+        .to_string()
 }
 
 #[aoc(day09, part2)]
@@ -327,7 +332,12 @@ pub fn part2(inp: &str) -> String {
 }
 
 fn _part2(inp: &str, _sample: bool) -> String {
-    ICProgram::from_str(inp).run_single(2).output.pop().unwrap().to_string()
+    ICProgram::from_str(inp)
+        .run_single(2)
+        .output
+        .pop()
+        .unwrap()
+        .to_string()
 }
 
 #[test]

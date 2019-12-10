@@ -249,8 +249,8 @@ impl ICProgram {
     }
 
     fn run(&mut self, input: &[Int]) -> ICOutput {
-        use ICStepSuccess::*;
         use ICStepFailure::*;
+        use ICStepSuccess::*;
         use ICSuccess::*;
 
         let mut output = vec![];
@@ -278,7 +278,7 @@ impl ICProgram {
                 Err(failure) => {
                     let result = match failure {
                         NeedInput => Ok(AwaitingInput),
-                        Exception(exception) => Err(exception)
+                        Exception(exception) => Err(exception),
                     };
                     return ICOutput {
                         result,
@@ -320,7 +320,9 @@ fn try_inputs(nums: &[Int], input: &[Int]) -> Option<Int> {
     if set.len() != input.len() {
         return None;
     }
-    let mut programs: Vec<_> = std::iter::repeat(ICProgram::new(nums)).take(input.len()).collect();
+    let mut programs: Vec<_> = std::iter::repeat(ICProgram::new(nums))
+        .take(input.len())
+        .collect();
     let mut last = 0;
     for (program, &phase) in programs.iter_mut().zip(input.iter()) {
         let mut output = program.run(&[phase, last]);
@@ -364,7 +366,9 @@ fn try_inputs_2(nums: &[Int], input: &[Int]) -> Option<Int> {
         return None;
     }
     // create programs
-    let mut programs: Vec<_> = std::iter::repeat(ICProgram::new(nums)).take(input.len()).collect();
+    let mut programs: Vec<_> = std::iter::repeat(ICProgram::new(nums))
+        .take(input.len())
+        .collect();
     // give them their phases
     for (program, &phase) in programs.iter_mut().zip(input.iter()) {
         let output = program.run_single(phase);
@@ -416,39 +420,23 @@ fn _part2(inp: &str, _sample: bool) -> String {
     out.to_string()
 }
 
+#[rustfmt::skip]
 #[test]
 fn day07samples() {
-    assert_eq!(
-        _part1(r#"3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0"#, true),
-        "43210"
-    );
-    assert_eq!(
-        _part1(
-            r#"3,23,3,24,1002,24,10,24,1002,23,-1,23,101,5,23,23,1,24,23,23,4,23,99,0,0"#,
-            true
-        ),
-        "54321"
-    );
-    assert_eq!(
-        _part1(
-            r#"3,31,3,32,1002,32,10,32,1001,31,-2,31,1007,31,0,33,1002,33,7,33,1,33,31,31,1,32,31,31,4,31,99,0,0,0"#,
-            true
-        ),
-        "65210"
-    );
+    assert_eq!(_part1(r#"
+3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0
+"#.trim_matches('\n'), true), "43210");
+    assert_eq!(_part1(r#"
+3,23,3,24,1002,24,10,24,1002,23,-1,23,101,5,23,23,1,24,23,23,4,23,99,0,0
+"#.trim_matches('\n'), true), "54321");
+    assert_eq!(_part1(r#"
+3,31,3,32,1002,32,10,32,1001,31,-2,31,1007,31,0,33,1002,33,7,33,1,33,31,31,1,32,31,31,4,31,99,0,0,0
+"#.trim_matches('\n'), true), "65210");
 
-    assert_eq!(
-        _part2(
-            r#"3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5"#,
-            true
-        ),
-        "139629729"
-    );
-    assert_eq!(
-        _part2(
-            r#"3,52,1001,52,-5,52,3,53,1,52,56,54,1007,54,5,55,1005,55,26,1001,54,-5,54,1105,1,12,1,53,54,53,1008,54,0,55,1001,55,1,55,2,53,55,53,4,53,1001,56,-1,56,1005,56,6,99,0,0,0,0,10"#,
-            true
-        ),
-        "18216"
-    );
+    assert_eq!(_part2(r#"
+3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5
+"#.trim_matches('\n'), true), "139629729");
+    assert_eq!(_part2(r#"
+3,52,1001,52,-5,52,3,53,1,52,56,54,1007,54,5,55,1005,55,26,1001,54,-5,54,1105,1,12,1,53,54,53,1008,54,0,55,1001,55,1,55,2,53,55,53,4,53,1001,56,-1,56,1005,56,6,99,0,0,0,0,10
+"#.trim_matches('\n'), true), "18216");
 }

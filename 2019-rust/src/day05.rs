@@ -4,12 +4,15 @@ use std::iter;
 type Int = i64;
 
 #[allow(clippy::cognitive_complexity)]
-fn _run_intcode(nums: &mut Vec<Int>, input: &[Int], input_idx: &mut usize, output: &mut Vec<Int>) -> Option<()> {
+fn _run_intcode(
+    nums: &mut Vec<Int>,
+    input: &[Int],
+    input_idx: &mut usize,
+    output: &mut Vec<Int>,
+) -> Option<()> {
     let mut i = 0usize;
 
-    let to_usize = |i: Int| -> Option<usize> {
-        usize::try_from(i).ok()
-    };
+    let to_usize = |i: Int| -> Option<usize> { usize::try_from(i).ok() };
 
     let _add_to_i = |val: Int| -> Option<()> {
         i = if val.is_negative() {
@@ -53,7 +56,7 @@ fn _run_intcode(nums: &mut Vec<Int>, input: &[Int], input_idx: &mut usize, outpu
                 const VALUES: usize = 4;
 
                 let mut arguments = [0; VALUES];
-                arguments.copy_from_slice(nums.get(i..i+VALUES)?);
+                arguments.copy_from_slice(nums.get(i..i + VALUES)?);
                 let [_, lhs, rhs, target] = arguments;
 
                 *nums.get_mut(to_usize(target)?)? = use_mode(lhs)? + use_mode(rhs)?;
@@ -65,7 +68,7 @@ fn _run_intcode(nums: &mut Vec<Int>, input: &[Int], input_idx: &mut usize, outpu
                 const VALUES: usize = 4;
 
                 let mut arguments = [0; VALUES];
-                arguments.copy_from_slice(nums.get(i..i+VALUES)?);
+                arguments.copy_from_slice(nums.get(i..i + VALUES)?);
                 let [_, lhs, rhs, target] = arguments;
 
                 *nums.get_mut(to_usize(target)?)? = use_mode(lhs)? * use_mode(rhs)?;
@@ -77,7 +80,7 @@ fn _run_intcode(nums: &mut Vec<Int>, input: &[Int], input_idx: &mut usize, outpu
                 const VALUES: usize = 2;
 
                 let mut arguments = [0; VALUES];
-                arguments.copy_from_slice(nums.get(i..i+VALUES)?);
+                arguments.copy_from_slice(nums.get(i..i + VALUES)?);
                 let [_, target] = arguments;
                 let inp = *input.get(*input_idx)?;
                 *input_idx += 1;
@@ -91,7 +94,7 @@ fn _run_intcode(nums: &mut Vec<Int>, input: &[Int], input_idx: &mut usize, outpu
                 const VALUES: usize = 2;
 
                 let mut arguments = [0; VALUES];
-                arguments.copy_from_slice(nums.get(i..i+VALUES)?);
+                arguments.copy_from_slice(nums.get(i..i + VALUES)?);
                 let [_, out] = arguments;
                 output.push(use_mode(out)?);
 
@@ -102,7 +105,7 @@ fn _run_intcode(nums: &mut Vec<Int>, input: &[Int], input_idx: &mut usize, outpu
                 const VALUES: usize = 3;
 
                 let mut arguments = [0; VALUES];
-                arguments.copy_from_slice(nums.get(i..i+VALUES)?);
+                arguments.copy_from_slice(nums.get(i..i + VALUES)?);
                 let [_, param, dest] = arguments;
                 if use_mode(param)? != 0 {
                     i = to_usize(use_mode(dest)?)?;
@@ -115,7 +118,7 @@ fn _run_intcode(nums: &mut Vec<Int>, input: &[Int], input_idx: &mut usize, outpu
                 const VALUES: usize = 3;
 
                 let mut arguments = [0; VALUES];
-                arguments.copy_from_slice(nums.get(i..i+VALUES)?);
+                arguments.copy_from_slice(nums.get(i..i + VALUES)?);
                 let [_, param, dest] = arguments;
                 if use_mode(param)? == 0 {
                     i = to_usize(use_mode(dest)?)?;
@@ -128,7 +131,7 @@ fn _run_intcode(nums: &mut Vec<Int>, input: &[Int], input_idx: &mut usize, outpu
                 const VALUES: usize = 4;
 
                 let mut arguments = [0; VALUES];
-                arguments.copy_from_slice(nums.get(i..i+VALUES)?);
+                arguments.copy_from_slice(nums.get(i..i + VALUES)?);
                 let [_, lhs, rhs, target] = arguments;
 
                 *nums.get_mut(to_usize(target)?)? = (use_mode(lhs)? < use_mode(rhs)?) as Int;
@@ -140,7 +143,7 @@ fn _run_intcode(nums: &mut Vec<Int>, input: &[Int], input_idx: &mut usize, outpu
                 const VALUES: usize = 4;
 
                 let mut arguments = [0; VALUES];
-                arguments.copy_from_slice(nums.get(i..i+VALUES)?);
+                arguments.copy_from_slice(nums.get(i..i + VALUES)?);
                 let [_, lhs, rhs, target] = arguments;
 
                 *nums.get_mut(to_usize(target)?)? = (use_mode(lhs)? == use_mode(rhs)?) as Int;
@@ -174,9 +177,7 @@ pub fn part1(inp: &str) -> String {
 }
 
 fn _part1(inp: &str, _sample: bool) -> String {
-    let nums: Vec<Int> = inp.split(',')
-        .map(|s| s.parse().unwrap())
-        .collect();
+    let nums: Vec<Int> = inp.split(',').map(|s| s.parse().unwrap()).collect();
 
     let (halted, consumed, mut output) = run_intcode(nums.as_slice(), &[1]);
     assert!(halted);
@@ -192,9 +193,7 @@ pub fn part2(inp: &str) -> String {
 }
 
 fn _part2(inp: &str, _sample: bool) -> String {
-    let nums: Vec<Int> = inp.split(',')
-        .map(|s| s.parse().unwrap())
-        .collect();
+    let nums: Vec<Int> = inp.split(',').map(|s| s.parse().unwrap()).collect();
 
     let (halted, consumed, mut output) = run_intcode(nums.as_slice(), &[5]);
     assert!(halted);
@@ -206,8 +205,14 @@ fn _part2(inp: &str, _sample: bool) -> String {
 
 #[test]
 fn day05samples() {
-    assert_eq!(run_intcode(&[3,0,4,0,99],&[1]), (true, 1, vec![1]));
-    assert_eq!(run_intcode(&[1002,4,3,4,33],&[]), (true, 0, vec![]));
-    assert_eq!(run_intcode(&[3,9,8,9,10,9,4,9,99,-1,8],&[8]), (true, 1, vec![1]));
-    assert_eq!(run_intcode(&[3,9,8,9,10,9,4,9,99,-1,8],&[9]), (true, 1, vec![0]));
+    assert_eq!(run_intcode(&[3, 0, 4, 0, 99], &[1]), (true, 1, vec![1]));
+    assert_eq!(run_intcode(&[1002, 4, 3, 4, 33], &[]), (true, 0, vec![]));
+    assert_eq!(
+        run_intcode(&[3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8], &[8]),
+        (true, 1, vec![1])
+    );
+    assert_eq!(
+        run_intcode(&[3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8], &[9]),
+        (true, 1, vec![0])
+    );
 }

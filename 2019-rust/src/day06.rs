@@ -5,7 +5,11 @@ pub fn part1(inp: &str) -> String {
     _part1(inp, false)
 }
 
-fn num_orbits<'a>(s: &'a str, parents: &HashMap<&str, &'a str>, cache: &mut HashMap<&'a str, usize>) -> usize {
+fn num_orbits<'a>(
+    s: &'a str,
+    parents: &HashMap<&str, &'a str>,
+    cache: &mut HashMap<&'a str, usize>,
+) -> usize {
     if let Some(&cached) = cache.get(s) {
         cached
     } else {
@@ -27,7 +31,11 @@ fn _part1(inp: &str, _sample: bool) -> String {
     let mut cache: HashMap<&str, usize> = HashMap::new();
     cache.insert("COM", 0);
 
-    parents.keys().map(|s| num_orbits(s, &parents, &mut cache)).sum::<usize>().to_string()
+    parents
+        .keys()
+        .map(|s| num_orbits(s, &parents, &mut cache))
+        .sum::<usize>()
+        .to_string()
 }
 
 #[aoc(day06, part2)]
@@ -56,9 +64,10 @@ fn _part2(inp: &str, _sample: bool) -> String {
     out.to_string()
 }
 
+#[rustfmt::skip]
 #[test]
 fn day06samples() {
-assert_eq!(_part1(r#"
+    assert_eq!(_part1(r#"
 COM)B
 B)C
 C)D
@@ -72,7 +81,7 @@ J)K
 K)L
 "#.trim_matches('\n'), true), "42");
 
-assert_eq!(_part2(r#"
+    assert_eq!(_part2(r#"
 COM)B
 B)C
 C)D

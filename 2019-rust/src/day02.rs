@@ -5,9 +5,7 @@ type Int = i64;
 fn run_intcode_vec(mut nums: Vec<Int>) -> Option<Int> {
     let mut i = 0usize;
 
-    let to_usize = |i: Int| -> Option<usize> {
-        usize::try_from(i).ok()
-    };
+    let to_usize = |i| usize::try_from(i).ok();
 
     let _add_to_i = |val: Int| -> Option<()> {
         i = if val.is_negative() {
@@ -17,7 +15,7 @@ fn run_intcode_vec(mut nums: Vec<Int>) -> Option<Int> {
         };
         Some(())
     };
-    
+
     loop {
         match nums.get(i)? {
             // add
@@ -26,34 +24,36 @@ fn run_intcode_vec(mut nums: Vec<Int>) -> Option<Int> {
 
                 let mut arguments = [0; VALUES];
                 // guaranteed not to panic in copy_from_slice
-                arguments.copy_from_slice(nums.get(i..i+VALUES)?);
+                arguments.copy_from_slice(nums.get(i..i + VALUES)?);
                 let [_, lhs, rhs, target] = arguments;
 
-                *nums.get_mut(to_usize(target)?)? = nums.get(to_usize(lhs)?)? + nums.get(to_usize(rhs)?)?;
+                *nums.get_mut(to_usize(target)?)? =
+                    nums.get(to_usize(lhs)?)? + nums.get(to_usize(rhs)?)?;
                 i += VALUES;
-            },
+            }
             // multiply
             2 => {
                 const VALUES: usize = 4;
 
                 let mut arguments = [0; VALUES];
                 // guaranteed not to panic in copy_from_slice
-                arguments.copy_from_slice(nums.get(i..i+VALUES)?);
+                arguments.copy_from_slice(nums.get(i..i + VALUES)?);
                 let [_, lhs, rhs, target] = arguments;
 
-                *nums.get_mut(to_usize(target)?)? = nums.get(to_usize(lhs)?)? * nums.get(to_usize(rhs)?)?;
+                *nums.get_mut(to_usize(target)?)? =
+                    nums.get(to_usize(lhs)?)? * nums.get(to_usize(rhs)?)?;
                 i += VALUES;
-            },
+            }
             // halt
             99 => {
                 break;
-            },
+            }
             _ => {
                 return None;
             }
         }
     }
-    Some(nums.get(0)?.clone())
+    Some(*nums.get(0)?)
 }
 
 fn _run_intcode(nums: &[Int]) -> Option<Int> {
@@ -69,20 +69,18 @@ fn run_intcode_with_input(nums: &[Int], noun: Int, verb: Int) -> Option<Int> {
 
 #[aoc(day02, part1)]
 pub fn part1(inp: &str) -> String {
-    let nums: Vec<Int> = inp.split(',')
-        .map(|s| s.parse().unwrap())
-        .collect();
-    
-    run_intcode_with_input(&nums[..], 12, 2).unwrap().to_string()
+    let nums: Vec<Int> = inp.split(',').map(|s| s.parse().unwrap()).collect();
+
+    run_intcode_with_input(&nums[..], 12, 2)
+        .unwrap()
+        .to_string()
 }
 
 #[aoc(day02, part2)]
 pub fn part2(inp: &str) -> String {
-    let nums: Vec<Int> = inp.split(',')
-        .map(|s| s.parse().unwrap())
-        .collect();
-    
-    const TARGET: Int = 19690720;
+    let nums: Vec<Int> = inp.split(',').map(|s| s.parse().unwrap()).collect();
+
+    const TARGET: Int = 19_690_720;
 
     for noun in 0..=99 {
         for verb in 0..=99 {
@@ -96,8 +94,8 @@ pub fn part2(inp: &str) -> String {
 
 #[test]
 fn day02samples() {
-    assert_eq!(_run_intcode(&[1,0,0,0,99]), Some(2));
-    assert_eq!(_run_intcode(&[2,3,0,3,99]), Some(2));
-    assert_eq!(_run_intcode(&[2,4,4,5,99,0]), Some(2));
-    assert_eq!(_run_intcode(&[1,1,1,4,99,5,6,0,99]), Some(30));
+    assert_eq!(_run_intcode(&[1, 0, 0, 0, 99]), Some(2));
+    assert_eq!(_run_intcode(&[2, 3, 0, 3, 99]), Some(2));
+    assert_eq!(_run_intcode(&[2, 4, 4, 5, 99, 0]), Some(2));
+    assert_eq!(_run_intcode(&[1, 1, 1, 4, 99, 5, 6, 0, 99]), Some(30));
 }

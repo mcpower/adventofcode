@@ -9,12 +9,8 @@ fn _part1(inp: &str, _sample: bool) -> String {
     let to: i32 = split[1].parse().unwrap();
     (from..=to)
         .map(|n| n.to_string())
-        .filter(|s| {
-            s.chars().zip(s.chars().skip(1)).all(|(x, y)| x <= y)
-        })
-        .filter(|s| {
-            s.chars().zip(s.chars().skip(1)).any(|(x, y)| x == y)
-        })
+        .filter(|s| s.chars().zip(s.chars().skip(1)).all(|(x, y)| x <= y))
+        .filter(|s| s.chars().zip(s.chars().skip(1)).any(|(x, y)| x == y))
         .count()
         .to_string()
 }
@@ -30,9 +26,7 @@ fn _part2(inp: &str, _sample: bool) -> String {
     let to: i32 = split[1].parse().unwrap();
     (from..=to)
         .map(|n| n.to_string())
-        .filter(|s| {
-            s.chars().zip(s.chars().skip(1)).all(|(x, y)| x <= y)
-        })
+        .filter(|s| s.chars().zip(s.chars().skip(1)).all(|(x, y)| x <= y))
         .filter(|s| {
             let mut out = false;
             let mut streak = 1;
@@ -52,9 +46,10 @@ fn _part2(inp: &str, _sample: bool) -> String {
         .to_string()
 }
 
+#[rustfmt::skip]
 #[test]
 fn day04samples() {
-assert_eq!(_part1(r#"
+    assert_eq!(_part1(r#"
 111111-111111
 "#.trim_matches('\n'), true), "1");
     assert_eq!(_part1(r#"
