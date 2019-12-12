@@ -425,16 +425,20 @@ fn _part2(inp: &str, _sample: bool) -> String {
         }
     }
 
-    let min_row = *is_white.iter().map(|(row, col)| row).min().unwrap();
-    let max_row = *is_white.iter().map(|(row, col)| row).max().unwrap();
-    let min_col = *is_white.iter().map(|(row, col)| col).min().unwrap();
-    let max_col = *is_white.iter().map(|(row, col)| col).max().unwrap();
+    let min_row = is_white.iter().map(|p| p.0).min().unwrap();
+    let max_row = is_white.iter().map(|p| p.0).max().unwrap();
+    let min_col = is_white.iter().map(|p| p.1).min().unwrap();
+    let max_col = is_white.iter().map(|p| p.1).max().unwrap();
 
     let mut out = "".to_string();
 
     for row in min_row..=max_row {
         for col in min_col..=max_col {
-            out.push(if is_white.contains(&(row, col)) {'#'} else {'.'});
+            out.push_str(if is_white.contains(&(row, col)) {
+                "##"
+            } else {
+                ".."
+            });
         }
         out.push('\n');
     }
@@ -444,10 +448,4 @@ fn _part2(inp: &str, _sample: bool) -> String {
 
 #[rustfmt::skip]
 #[test]
-fn day11samples() {
-//    assert_eq!(_part1(r#"
-//"#.trim_matches('\n'), true), "");
-
-//    assert_eq!(_part2(r#"
-//"#.trim_matches('\n'), true), "");
-}
+fn day11samples() {}

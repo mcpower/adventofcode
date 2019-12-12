@@ -1,8 +1,8 @@
-use std::collections::{HashSet, HashMap};
+use std::collections::HashMap;
 
 type Point = (i64, i64, i64);
 fn add((a, b, c): Point, (x, y, z): Point) -> Point {
-    (a+x, b+y, c+z)
+    (a + x, b + y, c + z)
 }
 
 fn neg((a, b, c): Point) -> Point {
@@ -29,8 +29,7 @@ pub fn part1(inp: &str) -> String {
 }
 
 fn _part1(inp: &str, sample: bool) -> String {
-    let steps = if sample {100} else {1000};
-
+    let steps = if sample { 100 } else { 1000 };
 
     let mut points: Vec<(Point, Point)> = inp
         .lines()
@@ -49,21 +48,25 @@ fn _part1(inp: &str, sample: bool) -> String {
     for _ in 0..steps {
         // gravity
         for i in 0..points.len() {
-            for j in i+1..points.len() {
+            for j in i + 1..points.len() {
                 let (dx, dy, dz) = sub(points[i].0, points[j].0);
                 let d = (sign(dx), sign(dy), sign(dz));
                 points[i].1 = add(points[i].1, neg(d));
-                points[j].1 = add(points[j].1, (d));
+                points[j].1 = add(points[j].1, d);
             }
         }
-//        dbg!(&points);
         // velocity
-        for i in 0..points.len() {
-            points[i].0 = add(points[i].0, points[i].1);
+        for (pos, vel) in &mut points {
+            *pos = add(*pos, *vel);
         }
     }
 
-    let out = points.iter().map(|((x, y, z), (dx, dy, dz))| (x.abs() + y.abs() + z.abs()) * (dx.abs() + dy.abs() + dz.abs())).sum::<i64>();
+    let out = points
+        .iter()
+        .map(|((x, y, z), (dx, dy, dz))| {
+            (x.abs() + y.abs() + z.abs()) * (dx.abs() + dy.abs() + dz.abs())
+        })
+        .sum::<i64>();
 
     out.to_string()
 }
@@ -75,18 +78,17 @@ fn simulate_axes(v: Vec<i64>) -> (usize, usize) {
     s.insert(cur.clone(), s.len());
 
     loop {
+        // gravity
         for i in 0..cur.len() {
-            for j in i+1..cur.len() {
+            for j in i + 1..cur.len() {
                 let d = sign(cur[i].0 - cur[j].0);
                 cur[i].1 -= d;
                 cur[j].1 += d;
             }
         }
-//        dbg!(&points);
         // velocity
-        for i in 0..cur.len() {
-            let (p, v) = cur[i];
-            cur[i].0 += cur[i].1;
+        for (p, v) in &mut cur {
+            *p += *v;
         }
 
         if s.contains_key(&cur) {
@@ -104,7 +106,6 @@ pub fn part2(inp: &str) -> String {
     _part2(inp, false)
 }
 
-
 fn gcd(mut m: usize, mut n: usize) -> usize {
     while m != 0 {
         let old_m = m;
@@ -118,11 +119,8 @@ fn lcm(m: usize, n: usize) -> usize {
     m * (n / gcd(m, n))
 }
 
-fn _part2(inp: &str, sample: bool) -> String {
-    let steps = if sample {100} else {1000};
-
-
-    let mut points: Vec<Point> = inp
+fn _part2(inp: &str, _sample: bool) -> String {
+    let points: Vec<Point> = inp
         .lines()
         .map(|line| {
             if let [x, y, z] = line.split(", ").collect::<Vec<_>>().as_slice() {
@@ -136,26 +134,23 @@ fn _part2(inp: &str, sample: bool) -> String {
         })
         .collect();
 
-    let x = simulate_axes(points.iter().map(|(x, y, z)| x).cloned().collect());
-    let y = simulate_axes(points.iter().map(|(x, y, z)| y).cloned().collect());
-    let z = simulate_axes(points.iter().map(|(x, y, z)| z).cloned().collect());
-
-    dbg!(x,y,z);
+    let x = simulate_axes(points.iter().map(|p| p.0).collect());
+    let y = simulate_axes(points.iter().map(|p| p.1).collect());
+    let z = simulate_axes(points.iter().map(|p| p.2).collect());
 
     let cycle = lcm(lcm(x.1, y.1), z.1);
 
-    let mut blah = vec![x.0 + cycle, y.0 + cycle, z.0 + cycle];
-    blah.sort();
-    let mut out = 0;
-    let earliest = x.0.max(y.0.max(z.0));
-    if blah[0] >= earliest {
-        out = blah[0]
-    } else if blah[1] >= earliest {
-        out = blah[1]
-    } else {
-        out = blah[2];
-    }
+    let mut earliest_end = [x.0 + cycle, y.0 + cycle, z.0 + cycle];
+    earliest_end.sort();
 
+    let earliest_start = x.0.max(y.0.max(z.0));
+    let out = if earliest_end[0] >= earliest_start {
+        earliest_end[0]
+    } else if earliest_end[1] >= earliest_start {
+        earliest_end[1]
+    } else {
+        earliest_end[2]
+    };
 
     out.to_string()
 }
