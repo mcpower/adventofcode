@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "mc-aoc",
+    "mc-aoc-solutions",
+]
