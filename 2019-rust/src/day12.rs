@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::HashSet;
 
 type Point = (i64, i64, i64);
 fn add((a, b, c): Point, (x, y, z): Point) -> Point {
@@ -71,11 +71,12 @@ fn _part1(inp: &str, sample: bool) -> String {
     out.to_string()
 }
 
-// (offset, cycle length)
-fn simulate_axes(v: Vec<i64>) -> (usize, usize) {
+fn simulate_axes(v: Vec<i64>) -> usize {
+    // can always "undo" a state so every state has one parent
+    // therefore it must always cycle to the start
     let mut cur: Vec<_> = v.iter().map(|p| (*p, 0)).collect();
-    let mut s = HashMap::new();
-    s.insert(cur.clone(), s.len());
+    let mut s = HashSet::new();
+    s.insert(cur.clone());
 
     loop {
         // gravity
@@ -91,12 +92,10 @@ fn simulate_axes(v: Vec<i64>) -> (usize, usize) {
             *p += *v;
         }
 
-        if s.contains_key(&cur) {
-            let first_occurrence = *s.get(&cur).unwrap();
-            let last_occurrence = s.len();
-            return (first_occurrence, last_occurrence - first_occurrence);
+        if s.contains(&cur) {
+            return s.len();
         } else {
-            s.insert(cur.clone(), s.len());
+            s.insert(cur.clone());
         }
     }
 }
@@ -138,21 +137,7 @@ fn _part2(inp: &str, _sample: bool) -> String {
     let y = simulate_axes(points.iter().map(|p| p.1).collect());
     let z = simulate_axes(points.iter().map(|p| p.2).collect());
 
-    let cycle = lcm(lcm(x.1, y.1), z.1);
-
-    let mut earliest_end = [x.0 + cycle, y.0 + cycle, z.0 + cycle];
-    earliest_end.sort();
-
-    let earliest_start = x.0.max(y.0.max(z.0));
-    let out = if earliest_end[0] >= earliest_start {
-        earliest_end[0]
-    } else if earliest_end[1] >= earliest_start {
-        earliest_end[1]
-    } else {
-        earliest_end[2]
-    };
-
-    out.to_string()
+    lcm(lcm(x, y), z).to_string()
 }
 
 #[rustfmt::skip]
