@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::convert::TryFrom;
 
 type Int = i64;
@@ -322,7 +322,13 @@ fn _part1(inp: &str, _sample: bool) -> String {
     let res = prog.run_no_input();
     dbg!(res.output.iter().max());
     dbg!(res.output.iter().min());
-    (res.output.iter().skip(2).step_by(3).filter(|s| **s == 2).count()).to_string()
+    res.output
+        .iter()
+        .skip(2)
+        .step_by(3)
+        .filter(|s| **s == 2)
+        .count()
+        .to_string()
 }
 
 #[aoc(day13, part2)]
@@ -334,7 +340,7 @@ fn _part2(inp: &str, _sample: bool) -> String {
     let mut prog = ICProgram::from_str(inp);
     prog.memory[0] = 2;
 
-    let mut grid: Vec<Vec<Int>> = vec![vec![0;44];44];
+    let mut grid: Vec<Vec<Int>> = vec![vec![0; 44]; 44];
     let res = prog.run_no_input().output;
     let mut score = 0;
     let mut ball_col = 0;
@@ -342,11 +348,11 @@ fn _part2(inp: &str, _sample: bool) -> String {
     for i in (0..res.len()).step_by(3) {
         // i = distance from left = col
         if res[i] == -1 {
-            score = res[i+2];
+            score = res[i + 2];
         } else {
-            let row = res[i+1] as usize;
-            let col =res[i] as usize;
-            let tile = res[i+2];
+            let row = res[i + 1] as usize;
+            let col = res[i] as usize;
+            let tile = res[i + 2];
             grid[row][col] = tile;
             if tile == 4 {
                 ball_col = col;
@@ -358,7 +364,10 @@ fn _part2(inp: &str, _sample: bool) -> String {
     }
 
     for i in 0..44 {
-        println!("{}", grid[i].iter().map(|x| x.to_string()).collect::<String>());
+        println!(
+            "{}",
+            grid[i].iter().map(|x| x.to_string()).collect::<String>()
+        );
     }
 
     loop {
@@ -377,11 +386,11 @@ fn _part2(inp: &str, _sample: bool) -> String {
         for i in (0..res.len()).step_by(3) {
             // i = distance from left = col
             if res[i] == -1 {
-                score = res[i+2];
+                score = res[i + 2];
             } else {
-                let row = res[i+1] as usize;
-                let col =res[i] as usize;
-                let tile = res[i+2];
+                let row = res[i + 1] as usize;
+                let col = res[i] as usize;
+                let tile = res[i + 2];
                 grid[row][col] = tile;
                 if tile == 4 {
                     ball_col = col;
@@ -398,7 +407,10 @@ fn _part2(inp: &str, _sample: bool) -> String {
     }
 
     for i in 0..44 {
-        println!("{}", grid[i].iter().map(|x| x.to_string()).collect::<String>());
+        println!(
+            "{}",
+            grid[i].iter().map(|x| x.to_string()).collect::<String>()
+        );
     }
     score.to_string()
 }
@@ -409,7 +421,4 @@ fn day13samples() {
 assert_eq!(_part1(r#"
 14,1,14,2,14,3,14,6,14,5,14,4,99
 "#.trim_matches('\n'), true), "0");
-
-//assert_eq!(_part2(r#"
-//"#.trim_matches('\n'), true), "");
 }
