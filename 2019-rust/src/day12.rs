@@ -1,6 +1,4 @@
-use std::collections::HashSet;
-
-type Point = (i64, i64, i64);
+type Point = (i16, i16, i16);
 fn add((a, b, c): Point, (x, y, z): Point) -> Point {
     (a + x, b + y, c + z)
 }
@@ -13,7 +11,7 @@ fn sub(p: Point, v: Point) -> Point {
     add(p, neg(v))
 }
 
-fn sign(i: i64) -> i64 {
+fn sign(i: i16) -> i16 {
     if i > 0 {
         1
     } else if i == 0 {
@@ -35,9 +33,9 @@ fn _part1(inp: &str, sample: bool) -> String {
         .lines()
         .map(|line| {
             if let [x, y, z] = line.split(", ").collect::<Vec<_>>().as_slice() {
-                let x: i64 = x[3..].parse().unwrap();
-                let y: i64 = y[2..].parse().unwrap();
-                let z: i64 = z[2..(z.len() - 1)].parse().unwrap();
+                let x: i16 = x[3..].parse().unwrap();
+                let y: i16 = y[2..].parse().unwrap();
+                let z: i16 = z[2..(z.len() - 1)].parse().unwrap();
                 ((x, y, z), (0, 0, 0))
             } else {
                 panic!();
@@ -66,36 +64,38 @@ fn _part1(inp: &str, sample: bool) -> String {
         .map(|((x, y, z), (dx, dy, dz))| {
             (x.abs() + y.abs() + z.abs()) * (dx.abs() + dy.abs() + dz.abs())
         })
-        .sum::<i64>();
+        .sum::<i16>();
 
     out.to_string()
 }
 
-fn simulate_axes(v: Vec<i64>) -> usize {
+fn simulate_axes(v: Vec<i16>) -> usize {
     // can always "undo" a state so every state has one parent
     // therefore it must always cycle to the start
-    let mut cur: Vec<_> = v.iter().map(|p| (*p, 0)).collect();
-    let mut s = HashSet::new();
-    s.insert(cur.clone());
+    let orig: [i16;8] = [v[0],v[1],v[2],v[3],0,0,0,0];
+    let mut ps = orig;
+    let mut i = 0usize;
 
     loop {
         // gravity
-        for i in 0..cur.len() {
-            for j in i + 1..cur.len() {
-                let d = sign(cur[i].0 - cur[j].0);
-                cur[i].1 -= d;
-                cur[j].1 += d;
+        for i in 0..4 {
+            for j in 0..4 {
+                use std::cmp::Ordering;
+                ps[i+4] += match ps[i].cmp(&ps[j]) {
+                    Ordering::Less => 1,
+                    Ordering::Equal => 0,
+                    Ordering::Greater => -1
+                };
             }
         }
         // velocity
-        for (p, v) in &mut cur {
-            *p += *v;
+        for i in 0..4 {
+            ps[i] += ps[i+4];
         }
+        i += 1;
 
-        if s.contains(&cur) {
-            return s.len();
-        } else {
-            s.insert(cur.clone());
+        if ps == orig {
+            return i;
         }
     }
 }
@@ -123,9 +123,9 @@ fn _part2(inp: &str, _sample: bool) -> String {
         .lines()
         .map(|line| {
             if let [x, y, z] = line.split(", ").collect::<Vec<_>>().as_slice() {
-                let x: i64 = x[3..].parse().unwrap();
-                let y: i64 = y[2..].parse().unwrap();
-                let z: i64 = z[2..(z.len() - 1)].parse().unwrap();
+                let x: i16 = x[3..].parse().unwrap();
+                let y: i16 = y[2..].parse().unwrap();
+                let z: i16 = z[2..(z.len() - 1)].parse().unwrap();
                 (x, y, z)
             } else {
                 panic!();
