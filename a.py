@@ -1,16 +1,12 @@
 import sys; sys.dont_write_bytecode = True; from utils import *
 """
-To do: ensure Code Runner works (in WSL), have preloaded the day and input in Chrome,
-saved input into the folder, have utils on the side, collapse regions
 Strings, lists, dicts:
-lmap, ints, positive_ints, floats, positive_floats, words, keyvalues
-
-Algorithms:
-bisect, binary_search, hamming_distance, edit_distance
+lmap, ints, positive_ints, floats, positive_floats, words
 
 Data structures:
 Linked, UnionFind
-use deque for queue: q[0], q.append and q.popleft
+dict: d.keys(), d.values(), d.items()
+deque: q[0], q.append and q.popleft
 
 List/Vector operations:
 GRID_DELTA, OCT_DELTA
@@ -19,14 +15,6 @@ padd, pneg, psub, pmul, pdot, pdist1, pdist2sq, pdist2
 
 Matrices:
 matmat, matvec, matexp
-
-Previous problems:
-knot
-
-Dict things:
-dict.keys()
-dict.values()
-dict.items()
 """
 
 def do_case(inp: str, sample=False):

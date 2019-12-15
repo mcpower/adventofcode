@@ -3,35 +3,28 @@ from typing import DefaultDict, List, Optional, Tuple
 import operator
 
 class Intcode:
-    memory: DefaultDict[int, int]
+    memory: List[int]
+    oob: DefaultDict[int, int]
     ip: int
     base: int
     halted: bool
 
-    BIN_OPS = {
-        1: operator.add,
-        2: operator.mul,
-        7: lambda a, b: int(a < b),
-        8: lambda a, b: int(a == b),
-    }
-
-    JUMP_OPS = {
-        5: bool,
-        6: operator.not_,
-    }
-
     def __init__(self, memory: List[int]) -> None:
-        self.memory = defaultdict(int, enumerate(memory))
+        self.memory = memory + ([0] * len(memory))
+        self.oob = defaultdict(int, enumerate(memory))
         self.ip = 0
         self.base = 0
         self.halted = False
     
+    def __repr__(self) -> str:
+        return f"Intcode(ip={self.ip}, base={self.base}, halted={self.halted})"
+    
     def debug_negative_index(self, i: int) -> None:
         print("debug memory addresses:")
-        print(self.memory[self.ip])
-        print(self.memory[self.ip+1])
-        print(self.memory[self.ip+2])
-        print(self.memory[self.ip+3])
+        print(self[self.ip])
+        print(self[self.ip+1])
+        print(self[self.ip+2])
+        print(self[self.ip+3])
         print("debug index:")
         print(i)
     
@@ -39,17 +32,23 @@ class Intcode:
         if i < 0:
             self.debug_negative_index(i)
             raise IndexError("negative index")
-        return self.memory[i]
+        if i < len(self.memory):
+            return self.memory[i]
+        else:
+            return self.oob[i]
     
     def __setitem__(self, i: int, item: int) -> int:
         if i < 0:
             self.debug_negative_index(i)
             raise IndexError("negative index")
-        self.memory[i] = item
+        if i < len(self.memory):
+            self.memory[i] = item
+        else:
+            self.oob[i] = item
     
     def addr(self, param: int) -> int:
         out = self.ip + param
-        mode = (self.memory[self.ip] // pow(10, param + 2 - 1)) % 10
+        mode = (self[self.ip] // pow(10, param + 2 - 1)) % 10
         if mode == 0:
             out = self[out]
         elif mode == 1:
@@ -65,10 +64,26 @@ class Intcode:
             raise Exception("already halted")
         out = []
         while True:
-            op = self.memory[self.ip] % 100
-            if op in Intcode.BIN_OPS:
-                self[self.addr(3)] = Intcode.BIN_OPS[op](self[self.addr(1)], self[self.addr(2)])
+            op = self[self.ip] % 100
+            if op == 1 or op == 2 or op == 7 or op == 8:
+                if op == 1:
+                    res = self[self.addr(1)] + self[self.addr(2)]
+                elif op == 2:
+                    res = self[self.addr(1)] * self[self.addr(2)]
+                elif op == 7:
+                    res = int(self[self.addr(1)] < self[self.addr(2)])
+                else:
+                    res = int(self[self.addr(1)] == self[self.addr(2)])
+                self[self.addr(3)] = res
                 self.ip += 4
+            elif op == 5 or op == 6:
+                if (op == 5) == bool(self[self.addr(1)]):
+                    self.ip = self[self.addr(2)]
+                else:
+                    self.ip += 3
+            elif op == 9:
+                self.base += self[self.addr(1)]
+                self.ip += 2
             elif op == 3:
                 if inp is None:
                     return (False, out)
@@ -77,14 +92,6 @@ class Intcode:
                 self.ip += 2
             elif op == 4:
                 out.append(self[self.addr(1)])
-                self.ip += 2
-            elif op in Intcode.JUMP_OPS:
-                if Intcode.JUMP_OPS[op](self[self.addr(1)]):
-                    self.ip = self[self.addr(2)]
-                else:
-                    self.ip += 3
-            elif op == 9:
-                self.base += self[self.addr(1)]
                 self.ip += 2
             elif op == 99:
                 self.halted = True

@@ -454,24 +454,6 @@ def matexp(a, k):
     return out
 #endregion
 
-#region Previous problems
-def knot(inp: str, binary: bool=False) -> str:
-    lengths = lmap(ord, inp) + [17, 31, 73, 47, 23]
-    pos = skip = 0
-    l = list(range(256))
-    for _ in range(64):
-        for i in lengths:
-            positions = [x & 255 for x in range(pos, pos+i)]
-            oldl = list(l)
-            for x, y in zip(positions, reversed(positions)):
-                l[x] = oldl[y]
-            pos += i + skip
-            skip += 1
-    sparse = [reduce(operator.xor, l[i:i+16]) for i in range(0, 256, 16)]
-    return "".join(bin(i)[2:].zfill(8) if binary else hex(i)[2:].zfill(2) for i in sparse)
-#endregion
-
-
 
 #region Running
 def parse_samples(l):
@@ -481,19 +463,20 @@ def parse_samples(l):
 
 def get_actual(day=None, year=None):
     try:
-        actual_input = open("input.txt").read()
+        actual_input = open(__file__.replace("utils.py", "input.txt")).read()
         return actual_input
     except FileNotFoundError:
         pass
     from pathlib import Path
-    # let's try grabbing it
-    search_path = Path(".").resolve()
+    cur_folder = Path(__file__).resolve().parent
+    input_path = cur_folder.joinpath("input.txt")
+    search_path = cur_folder
     try:
         if day is None:
             day = int(search_path.name)
         if year is None:
             year = int(search_path.parent.name)
-    except ValueError:
+    except Exception:
         print("Can't get day and year.")
         print("Backup: save 'input.txt' into the same folder as this script.")
         return ""
@@ -534,10 +517,10 @@ def get_actual(day=None, year=None):
     url = "https://adventofcode.com/{}/day/{}/input".format(year, day)
     try:
         with opener.open(url) as r:
-            with open("input.txt", "wb") as f:
+            with input_path.open(mode="wb") as f:
                 shutil.copyfileobj(r, f)
             print("Input saved!")
-            return open("input.txt").read()
+            return input_path.open().read()
     except urllib.error.HTTPError as e:
         status_code = e.getcode()
         if status_code == 400:
