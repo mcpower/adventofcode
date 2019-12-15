@@ -25,17 +25,12 @@ def do_case(inp: str, sample=False):
 
     cur_pos = [0, 0]
     D = {
-        1: (-1, 0),
-        2: (1, 0),
-        4: (0, -1),
-        3: (0, 1),
+        1: CHAR_TO_DELTA["N"],
+        2: CHAR_TO_DELTA["S"],
+        3: CHAR_TO_DELTA["W"],
+        4: CHAR_TO_DELTA["E"],
     }
-    REVERSE = {
-        1: 2,
-        2: 1,
-        4: 3,
-        3: 4,
-    }
+    INVERT_D = invert_dict(D)
 
     grid = dict()
     grid[tuple(cur_pos)] = 1
@@ -55,8 +50,8 @@ def do_case(inp: str, sample=False):
                     if out == 2:
                         target = cur_pos
                     dfs()
-                    reverse_i = REVERSE[i]
-                    reverse_dpos = D[reverse_i]
+                    reverse_dpos = turn_180(dpos)
+                    reverse_i = INVERT_D[tuple(reverse_dpos)]
                     _, [out] = prog.run(reverse_i)
                     cur_pos = padd(cur_pos, reverse_dpos)
                 assert cur_pos == original_pos

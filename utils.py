@@ -52,6 +52,27 @@ def words(s: str) -> typing.List[str]:
 
 def keyvalues(d):
     return list(d.items())  # keep on forgetting this...
+def make_hashable(l):
+    if isinstance(l, list):
+        return tuple(map(make_hashable, l))
+    if isinstance(l, dict):
+        l = set(l.items())
+    if isinstance(l, set):
+        return frozenset(map(make_hashable, l))
+    return l
+def invert_dict(d, single=True):
+    out = {}
+    if single:
+        for k, v in d.items():
+            v = make_hashable(v)
+            if v in out:
+                print("[invert_dict] WARNING WARNING: duplicate key", v)
+            out[v] = k
+    else:
+        for k, v in d.items():
+            v = make_hashable(v)
+            out.setdefault(v, []).append(k)
+    return out
 #endregion
 
 #region Algorithms
@@ -494,6 +515,39 @@ class UnionFind:
 #region List/Vector operations
 GRID_DELTA = [[-1, 0], [1, 0], [0, -1], [0, 1]]
 OCT_DELTA = [[1, 1], [-1, -1], [1, -1], [-1, 1]] + GRID_DELTA
+CHAR_TO_DELTA = {
+    "U": [-1, 0],
+    "R": [0, 1],
+    "D": [1, 0],
+    "L": [0, -1],
+    "N": [-1, 0],
+    "E": [0, 1],
+    "S": [1, 0],
+    "W": [0, -1],
+}
+DELTA_TO_UDLR = {
+    (-1, 0): "U",
+    (0, 1): "R",
+    (1, 0): "D",
+    (0, -1): "L",
+}
+DELTA_TO_NESW = {
+    (-1, 0): "N",
+    (0, 1): "E",
+    (1, 0): "S",
+    (0, -1): "W",
+}
+def turn_180(drowcol):
+    drow, dcol = drowcol
+    return [-drow, -dcol]
+def turn_left(drowcol):
+    # positive dcol -> positive drow
+    # positive drow -> negative dcol
+    drow, dcol = drowcol
+    return [dcol, -drow]
+def turn_right(drowcol):
+    drow, dcol = drowcol
+    return [-dcol, drow]
 def get_neighbours(grid, row, col, deltas, fill=None):
     n, m = len(grid), len(grid[0])
     out = []
