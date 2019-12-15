@@ -255,7 +255,7 @@ def bfs(
     """
     g_values = {from_node: 0}  # type: typing.Tuple[typing.Dict[T, int]]
     parents = {}  # type: typing.Dict[T, T]
-    todo = [from_node]  # type: typing.List[typing.Tuple[T]]
+    todo = [from_node]  # type: typing.List[T]
     dist = 0
 
     while todo:

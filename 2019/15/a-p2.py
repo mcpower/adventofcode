@@ -22,7 +22,7 @@ def a_star2(
     from_node: T,
     expand: typing.Callable[[T], typing.Iterable[typing.Tuple[int, T]]],
     heuristic: typing.Optional[typing.Callable[[T], int]] = None,
-) -> typing.Tuple[int, typing.List[T]]:
+) -> typing.Dict[T, T]:
     if heuristic is None:
         heuristic = lambda _: 0
     seen = set()  # type: typing.Set[T]
@@ -56,7 +56,7 @@ def a_star2(
 def bfs2(
     from_node: T,
     expand: typing.Callable[[T], typing.Iterable[T]],
-) -> typing.Tuple[int, typing.List[T]]:
+) -> typing.Dict[T, T]:
     return a_star2(from_node, lambda node: ((1, other) for other in expand(node)))
 
 def do_case(inp: str, sample=False):
