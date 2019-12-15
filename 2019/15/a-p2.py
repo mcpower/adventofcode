@@ -1,4 +1,4 @@
-import sys; sys.dont_write_bytecode = True; from utils import *
+import sys; sys.dont_write_bytecode = True; from utils_old import *
 """
 Strings, lists, dicts:
 lmap, ints, positive_ints, floats, positive_floats, words

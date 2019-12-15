@@ -182,12 +182,24 @@ def topsort(out_edges: typing.Dict[T, typing.List[T]]) -> typing.List[T]:
     return out
 
 
-def a_star(
+def path_from_parents(parents: typing.Dict[T, T], end: T) -> typing.List[T]:
+    out = [end]
+    while out[-1] in parents:
+        out.append(parents[out[-1]])
+    out.reverse()
+    return out
+
+
+def dijkstra(
     from_node: T,
-    to_node: T,
     expand: typing.Callable[[T], typing.Iterable[typing.Tuple[int, T]]],
     heuristic: typing.Optional[typing.Callable[[T], int]] = None,
-) -> typing.Tuple[int, typing.List[T]]:
+    to_node: typing.Optional[T] = None,
+) -> typing.Tuple[typing.Dict[T, int], typing.Dict[T, T]]:
+    """
+    Returns (distances, parents).
+    Use path_from_parents(parents, node) to get a path.
+    """
     if heuristic is None:
         heuristic = lambda _: 0
     seen = set()  # type: typing.Set[T]
@@ -207,7 +219,7 @@ def a_star(
             continue
 
         assert g_values[node] == g
-        if node == to_node:
+        if to_node is not None and node == to_node:
             break
         seen.add(node)
 
@@ -218,22 +230,58 @@ def a_star(
                 g_values[new_node] = new_g
                 heapq.heappush(todo, (new_g + heuristic(new_node), new_g, new_node))
     
+    return (g_values, parents)
+
+def a_star(
+    from_node: T,
+    to_node: T,
+    expand: typing.Callable[[T], typing.Iterable[typing.Tuple[int, T]]],
+    heuristic: typing.Optional[typing.Callable[[T], int]] = None,
+) -> typing.Tuple[int, typing.List[T]]:
+    g_values, parents = dijkstra(from_node, to_node=to_node, expand=expand, heuristic=heuristic)
     if to_node not in g_values:
         raise Exception("couldn't reach to_node")
-    
-    # get path
-    path = [to_node]
-    while path[-1] != from_node:
-        path.append(parents[path[-1]])
+    return (g_values[to_node], path_from_parents(parents, to_node))
 
-    return (g_values[to_node], path)
 
 def bfs(
+    from_node: T,
+    expand: typing.Callable[[T], typing.Iterable[T]],
+    to_node: typing.Optional[T] = None
+) -> typing.Tuple[typing.Dict[T, int], typing.Dict[T, T]]:
+    """
+    Returns (distances, parents).
+    Use path_from_parents(parents, node) to get a path.
+    """
+    g_values = {from_node: 0}  # type: typing.Tuple[typing.Dict[T, int]]
+    parents = {}  # type: typing.Dict[T, T]
+    todo = [from_node]  # type: typing.List[typing.Tuple[T]]
+    dist = 0
+
+    while todo:
+        new_todo = []
+        dist += 1
+        for node in todo:
+            for new_node in expand(node):
+                if new_node not in g_values:
+                    new_todo.append(new_node)
+                    parents[new_node] = node
+                    g_values[new_node] = dist
+        todo = new_todo
+        if to_node is not None and to_node in g_values:
+            break
+    
+    return (g_values, parents)
+
+def bfs_single(
     from_node: T,
     to_node: T,
     expand: typing.Callable[[T], typing.Iterable[T]],
 ) -> typing.Tuple[int, typing.List[T]]:
-    return a_star(from_node, to_node, lambda node: ((1, other) for other in expand(node)))
+    g_values, parents = bfs(from_node, to_node=to_node, expand=expand)
+    if to_node not in g_values:
+        raise Exception("couldn't reach to_node")
+    return (g_values[to_node], path_from_parents(parents, to_node))
 
 # Distances
 BLANK = object()
@@ -543,7 +591,7 @@ def parse_samples(l):
 
 def get_actual(day=None, year=None):
     try:
-        actual_input = open(__file__.replace("utils.py", "input.txt")).read()
+        actual_input = open(__file__[:__file__.rindex("/")] + "/input.txt").read()
         return actual_input
     except FileNotFoundError:
         pass
