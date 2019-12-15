@@ -1,11 +1,9 @@
 {
     "code-runner.executorMap": {
-        "cpp": "cd $dir && g++ $fileName -o $fileNameWithoutExt && $dir$fileNameWithoutExt",
         "python": "pypy3"
     },
     "python.linting.mypyEnabled": false,
     "code-runner.fileDirectoryAsCwd": true,
     "code-runner.runInTerminal": true,
-    "code-runner.saveFileBeforeRun": true,
-    "code-runner.terminalRoot": "/mnt/",
+    "code-runner.saveFileBeforeRun": true
 }
