@@ -1,15 +1,15 @@
 from collections import defaultdict
-from typing import DefaultDict, List, Optional, Tuple
+import typing
 import operator
 
 class Intcode:
-    memory: List[int]
-    oob: DefaultDict[int, int]
+    memory: typing.List[int]
+    oob: typing.DefaultDict[int, int]
     ip: int
     base: int
     halted: bool
 
-    def __init__(self, memory: List[int]) -> None:
+    def __init__(self, memory: typing.List[int]) -> None:
         self.memory = memory + ([0] * len(memory))
         self.oob = defaultdict(int, enumerate(memory))
         self.ip = 0
@@ -59,7 +59,7 @@ class Intcode:
             raise Exception("bad mode")
         return out
     
-    def run(self, inp: Optional[int] = None) -> Tuple[bool, List[int]]:
+    def run(self, inp: typing.Optional[int] = None) -> typing.Tuple[bool, typing.List[int]]:
         if self.halted:
             raise Exception("already halted")
         out = []
@@ -98,3 +98,38 @@ class Intcode:
                 return (True, out)
             else:
                 raise Exception("invalid opcode " + str(op))
+
+    def run_multiple(self, inp: typing.List[int]) -> typing.Tuple[bool, typing.List[int]]:
+        out = []
+        for i in inp:
+            halted, output = self.run(i)
+            out.extend(output)
+            if halted:
+                break
+        return halted, out
+
+    def run_interactive(self) -> None:
+        halted, output = self.run()
+        Intcode.print_output(output)
+
+        while not halted:
+            inp = input() + "\n"
+            inputs = list(map(ord, inp))
+            halted, output = self.run_multiple(inputs)
+            Intcode.print_output(output)
+
+    @staticmethod
+    def print_output(output: typing.List[int]) -> None:
+        out = []
+        unprintable = []
+        unprintable_char = "©"
+        for char in output:
+            if char < 9 or char > 126:
+                out.append(unprintable_char)
+                unprintable.append(char)
+            else:
+                out.append(chr(char))
+        print("".join(out), end="")
+        if unprintable:
+            print()
+            print("unprintable:", unprintable)
