@@ -639,7 +639,7 @@ def matexp(a, k):
 
 #region Running
 def parse_samples(l):
-    samples = [thing.strip("\n") for thing in l]
+    samples = lmap(str.strip, l)
     while samples and not samples[-1]: samples.pop()
     return samples
 
@@ -723,7 +723,7 @@ def run_samples_and_actual(part1, part2, do_case):
         print("-"*10)
         print("#"*10)
 
-    actual_input = get_actual().strip("\n")
+    actual_input = get_actual().strip()
 
     if actual_input:
         print("!! running actual: !!")
