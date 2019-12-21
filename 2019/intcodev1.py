@@ -108,14 +108,16 @@ class Intcode:
                 break
         return halted, out
 
+    def run_ascii(self, inp: str) -> typing.Tuple[bool, typing.List[int]]:
+        "This adds a new line for you :D"
+        return self.run_multiple(list(map(ord, inp + "\n")))
+
     def run_interactive(self) -> None:
         halted, output = self.run()
         Intcode.print_output(output)
 
         while not halted:
-            inp = input() + "\n"
-            inputs = list(map(ord, inp))
-            halted, output = self.run_multiple(inputs)
+            halted, output = self.run_ascii(input())
             Intcode.print_output(output)
 
     @staticmethod
