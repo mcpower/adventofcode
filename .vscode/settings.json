@@ -6,6 +6,6 @@
     "code-runner.fileDirectoryAsCwd": true,
     "code-runner.runInTerminal": true,
     "code-runner.saveFileBeforeRun": true,
-    "python.pythonPath": "/usr/bin/pypy3",
+    "python.pythonPath": "pypy3",
     "python.autoComplete.extraPaths": ["./2019"]
 }
