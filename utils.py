@@ -19,6 +19,9 @@ sys.setrecursionlimit(100000)
 T = typing.TypeVar("T")
 # Copy a function if you need to modify it.
 
+AIR = "."
+WALL = "#"
+
 #region Strings, lists, dicts
 def lmap(func, *iterables):
     return list(map(func, *iterables))
