@@ -23,7 +23,7 @@ def do_case(inp: str, sample=False):
     lines = inp.splitlines()
     out = 0
     
-    print("out:", out)
+    print("out:    ", out)
     return  # RETURNED VALUE DOESN'T DO ANYTHING, PRINT THINGS INSTEAD
 
 
