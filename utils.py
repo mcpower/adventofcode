@@ -35,6 +35,13 @@ def min_max(l):
     return min(l), max(l)
 def max_minus_min(l):
     return max(l) - min(l)
+def partial_sum(l):
+    "out[i] == sum(in[:i])"
+    out = [0]
+    for i in l:
+        out.append(out[-1] + i)
+    return out
+cum_sum = partial_sum
 def list_diff(x):
     return [b-a for a, b in zip(x, x[1:])]
 def flatten(l):
