@@ -736,7 +736,7 @@ def run_samples_and_actual(part1, part2, do_case):
     actual_input = get_actual().strip("\n")
 
     if actual_input:
-        print("!! running actual ({} lines): !!".format(actual_input.count("\n")))
+        print("!! running actual ({} lines): !!".format(actual_input.count("\n")+1))
         print("-"*10)
         do_case(actual_input, False)
         print("-"*10)
