@@ -31,7 +31,7 @@ def do_case(inp: str, sample=False):
 
     l.sort()
     l.append(built_in)
-    one = 1
+    one = 1  # lol this is wrong for some inputs
     three = 0
 
     for a, b in zip(l, l[1:]):
