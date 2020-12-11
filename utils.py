@@ -723,10 +723,9 @@ def get_actual(day=None, year=None):
             print("Request failed with code {}??".format(status_code))
         return ""
 
-def run_samples_and_actual(part1, part2, do_case):
-    p1 = parse_samples(part1)
-    p2 = parse_samples(part2)
-    for sample in p2 or p1:
+def run_samples_and_actual(samples, do_case):
+    samples = parse_samples(samples)
+    for sample in samples:
         print("running {}:".format(repr(sample)[:100]))
         print("-"*10)
         do_case(sample, True)
