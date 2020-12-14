@@ -655,12 +655,16 @@ def parse_samples(l):
 
 def get_actual(day=None, year=None):
     try:
-        actual_input = open(__file__[:__file__.rindex("/")] + "/input.txt").read()
+        this_file = __file__
+    except NameError:
+        this_file = "./utils.py"
+    try:
+        actual_input = open(this_file[:this_file.rindex("/")] + "/input.txt").read()
         return actual_input
     except FileNotFoundError:
         pass
     from pathlib import Path
-    cur_folder = Path(__file__).resolve().parent
+    cur_folder = Path(this_file).resolve().parent
     input_path = cur_folder.joinpath("input.txt")
     search_path = cur_folder
     try:
@@ -711,8 +715,12 @@ def get_actual(day=None, year=None):
         with opener.open(url) as r:
             with input_path.open(mode="wb") as f:
                 shutil.copyfileobj(r, f)
-            print("Input saved!")
-            return input_path.open().read()
+            print("Input saved! First few lines look like:")
+            actual = input_path.open().read()
+            lines = actual.splitlines()
+            for line in lines[:16]:
+                print(line[:80] + "…" * (len(line) > 80))
+            return actual
     except urllib.error.HTTPError as e:
         status_code = e.getcode()
         if status_code == 400:
