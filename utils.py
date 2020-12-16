@@ -50,7 +50,7 @@ def every_n(l,n):
     return list(zip(*[iter(l)]*n))
 
 def ints(s: str) -> typing.List[int]:
-    return lmap(int, re.findall(r"-?\d+", s))  # thanks mserrano!
+    return lmap(int, re.findall(r"(?:(?<!\d)-)?\d+", s))  # thanks mserrano!
 def positive_ints(s: str) -> typing.List[int]:
     return lmap(int, re.findall(r"\d+", s))  # thanks mserrano!
 def floats(s: str) -> typing.List[float]:
