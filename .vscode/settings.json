@@ -5,6 +5,5 @@
     "python.linting.mypyEnabled": false,
     "code-runner.fileDirectoryAsCwd": true,
     "code-runner.runInTerminal": true,
-    "code-runner.saveFileBeforeRun": true,
-    "python.pythonPath": "pypy3"
+    "code-runner.saveFileBeforeRun": true
 }
