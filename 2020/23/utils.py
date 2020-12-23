@@ -400,15 +400,36 @@ class Linked(typing.Generic[T], typing.Iterable[T]):
         """
         self.concat_immediate(Linked(val))
     
+    def pop(self, n: int = 1) -> None:
+        """
+        Pops this node, as well as n others, off from the "parent list"
+        into its own list.
+        """
+        assert n > 0
+        first_self = self
+        last_self = self.move(n-1)
+
+        first_other = last_self.forward
+        last_other = first_self.backward
+        
+        last_other._join(first_other)
+        last_self._join(first_self)
+    
+    def pop_after(self, after: int, n: int = 1) -> None:
+        """
+        Pops the node n nodes after this node, as well as n others, into its
+        own list.
+        Returns the node n nodes after this node (in its new list).
+        """
+        to_return = self.move(after)
+        to_return.pop(n)  # music
+        return to_return
+
     def delete(self) -> None:
         """
-        Deletes this node.
-        After this is called, you should never use this node.
+        Deletes this node from the "parent list" into its own list.
         """
-        forward = self.forward
-        backward = self.backward
-        forward.backward = backward
-        backward.forward = forward
+        self.pop()
     
     def delete_other(self, n: int) -> None:
         """
