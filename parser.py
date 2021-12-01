@@ -11,35 +11,53 @@ class ParseException(Exception):
 
 class Parser(Generic[T]):
     def parse_partial(self, s: str, i: int) -> Tuple[T, int]:
+        """Parses a part of s starting from i.
+        
+        Returns a value and the next character index to parse from. Can raise
+        ParseException to stop parsing.
+        """
         raise NotImplementedError
     
     def parse(self, s: str) -> T:
+        """Parse a whole string to a value."""
         res, start = self.parse_partial(s, 0)
         assert start == len(s)
         return res
     
     def then(self, other: Union["Parser[U]", str]) -> "Parser[U]":
+        """Do self, then other, discarding self."""
         return self >> other
     
     def skip(self, other: Union["Parser[U]", str]) -> "Parser[T]":
+        """Do self, then other, discarding other."""
         return self << other
     
+    def either(self, other: Union["Parser[U]", str]) -> "Parser[Union[T, U]]":
+        """Try self, falling back to other if self fails."""
+        return self / other
+    
+    def concat(self, other: Union["Parser[U]", str]) -> "ConcatParser[T, U]":
+        return self + other
+    
     def map(self, f: Callable[[T], U]) -> "Parser[U]":
+        """Applies a function to a parser's result."""
         @parser
         def map_parser(s: str, i: int) -> Tuple[U, int]:
             t, rest = self.parse_partial(s, i)
             return f(t), rest
         return map_parser
     
-    def filter(self, f: Callable[[T], bool]) -> "Parser[T]":
+    def filter(self, pred: Callable[[T], bool]) -> "Parser[T]":
+        """Causes parser to raise ParseException if value doesn't pass pred."""
         @parser
         def filter_parser(self, s: str, i: int) -> Tuple[T, int]:
             t, rest = self.parse_partial(s, i)
-            if not f(t):
+            if not pred(t):
                 raise ParseException(f"value {t!r} did not match predicate")
         return filter_parser
     
     def rep(self) -> "Parser[List[T]]":
+        """Repeats a parser until ParseException."""
         @parser
         def rep_parser(s: str, i: int) -> Tuple[List[T], int]:
             out: List[T] = []
@@ -53,6 +71,7 @@ class Parser(Generic[T]):
         return rep_parser
     
     def rep1(self) -> "Parser[List[T]]":
+        """Repeats a parser at least once until ParseException."""
         @parser
         def rep1_parser(s: str, i: int) -> Tuple[List[T], int]:
             t, i = self.parse_partial(s, i)
@@ -67,6 +86,7 @@ class Parser(Generic[T]):
         return rep1_parser
     
     def repsep(self, sep: Union["Parser[Any]", str]) -> "Parser[List[T]]":
+        """Repeats a parser, then a separator, then the parser, ..."""
         if isinstance(sep, str):
             sep = string(sep)
         
@@ -82,15 +102,19 @@ class Parser(Generic[T]):
         return repsep_parser
     
     def repstr(self) -> "Parser[str]":
+        """Repeats a string parser until ParseException."""
         return self.rep().joinstr()
     
     def rep1str(self) -> "Parser[str]":
+        """Repeats a string parser at least once until ParseException."""
         return self.rep1().joinstr()
     
     def joinstr(self) -> "Parser[str]":
+        """Turns a parser of List[str] to str."""
         return self.map("".join)
     
     def optional(self) -> "Parser[Optional[T]]":
+        """"""
         return self / pure(None)
     
     def __lshift__(self, other: Union["Parser[U]", str]) -> "Parser[U]":
@@ -126,10 +150,10 @@ class Parser(Generic[T]):
                 return other.parse_partial(s, i)
         return either_parser
     
-    def __add__(self, other: Union["Parser[U]", str]) -> "ConcatParser[Union[T, U]]":
+    def __add__(self, other: Union["Parser[U]", str]) -> "ConcatParser[T, U]":
         if isinstance(other, str):
             other = string(other)
-        return ConcatParser([self, other])
+        return ConcatParser(self, other)
 
 
 class FunctionParser(Generic[T], Parser[T]):
@@ -141,7 +165,8 @@ class FunctionParser(Generic[T], Parser[T]):
 
 parser = FunctionParser
 
-def do(f: Callable[[], Generator[Union[Parser[Any], str], Any, T]]):
+def do(f: Callable[[], Generator[Union[Parser[Any], str], Any, T]]) -> Parser[T]:
+    """Allows composition of parsers using do-like notation."""
     @parser
     @functools.wraps(f)
     def parse_partial(s: str, i: int) -> Tuple[T, int]:
@@ -157,25 +182,22 @@ def do(f: Callable[[], Generator[Union[Parser[Any], str], Any, T]]):
                 return s.value, i
     return parse_partial
 
-class ConcatParser(Generic[T], Parser[List[T]]):
-    def __init__(self, parsers: List[Parser[T]]):
-        self.parsers = parsers
+class ConcatParser(Generic[T, U], Parser[Tuple[T, U]]):
+    def __init__(self, fst: Parser[T], snd: Parser[U]) -> None:
+        self.fst = fst
+        self.snd = snd
     
-    def parse_partial(self, s: str, i: int) -> Tuple[List[T], int]:
-        out: List[T] = []
-        for parser in self.parsers:
-            result, i = parser.parse_partial(s, i)
-            out.append(result)
-        return out, i
-    
-    def __add__(self, other: "Parser[U]") -> "ConcatParser[Union[T, U]]":
-        return ConcatParser(self.parsers + [other])
+    def parse_partial(self, s: str, i: int) -> Tuple[Tuple[T, U], int]:
+        t, i = self.fst.parse_partial(s, i)
+        u, i = self.snd.parse_partial(s, i)
+        return (t, u), i
 
 
 def pure(val: T) -> Parser[T]:
+    """Returns a parser which immediately returns a value."""
     return parser(lambda _, i: (val, i))
 
-def char(predicate: Callable[[str], bool] = lambda x: True):
+def char_pred(predicate: Callable[[str], bool] = lambda x: True):
     @parser
     def char_parser(s: str, i: int) -> Tuple[str, int]:
         if i < len(s):
@@ -188,6 +210,7 @@ def char(predicate: Callable[[str], bool] = lambda x: True):
     return char_parser
 
 def string(val: str) -> Parser[str]:
+    """Returns a parser that expects the exact string given."""
     @parser
     def string_parser(s: str, i: int) -> Tuple[str, int]:
         if s[i:i+len(val)] == val:
@@ -199,13 +222,16 @@ def string(val: str) -> Parser[str]:
 def regex(r: str, flags: int = 0, group = 0) -> Parser[str]:
     ...
 
-alpha = char(str.isalpha)
+# Any char.
+char = char_pred()
+
+alpha = char_pred(str.isalpha)
 word = alpha.rep1str()
 
-space = char(str.isspace)
+space = char_pred(str.isspace)
 spaces = space.rep1str()
 
-digit_char = char(str.isnumeric)
+digit_char = char_pred(str.isnumeric)
 digit = digit_char.map(int)
 number_nosign_str = digit_char.rep1str()
 number_nosign = number_nosign_str.map(int)
