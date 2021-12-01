@@ -48,6 +48,8 @@ def flatten(l):
     return [i for x in l for i in x]
 def every_n(l,n):
     return list(zip(*[iter(l)]*n))
+def windows(l, n):
+    return list(zip(*[l[i:] for i in range(n)]))
 
 def ints(s: str) -> typing.List[int]:
     return lmap(int, re.findall(r"(?:(?<!\d)-)?\d+", s))  # thanks mserrano!
