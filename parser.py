@@ -21,7 +21,7 @@ class Parser(Generic[T]):
     def parse(self, s: str) -> T:
         """Parse a whole string to a value."""
         res, start = self.parse_partial(s, 0)
-        assert start == len(s)
+        assert start == len(s), (start, len(s))
         return res
     
     def then(self, other: Union["Parser[U]", str]) -> "Parser[U]":
@@ -165,6 +165,18 @@ class FunctionParser(Generic[T], Parser[T]):
 
 parser = FunctionParser
 
+class LazyParser(Generic[T], Parser[T]):
+    def __init__(self, p: Callable[[], Parser[T]]) -> None:
+        self.p = p
+        self.parser: Optional[Parser[T]] = None
+    
+    def parse_partial(self, s: str, i: int) -> Tuple[T, int]:
+        if not self.parser:
+            self.parser = self.p()
+        return self.parser.parse_partial(s, i)
+
+lazy = LazyParser
+
 def do(f: Callable[[], Generator[Union[Parser[Any], str], Any, T]]) -> Parser[T]:
     """Allows composition of parsers using do-like notation."""
     @parser
@@ -247,3 +259,25 @@ if __name__ == "__main__":
         return (i, c)
 
     print(test.repsep(space).parse("123-4 5-6 7-8"))
+
+    parens = lazy(lambda: string('(') >> parens.rep().map(tuple) << string(')'))
+    
+    print(parens.parse("((())()())"))
+
+    aoc2018day20_paren = lazy(lambda: string('(') >> aoc2018day20_parts.repsep('|') << string(')'))
+    aoc2018day20_dir = char_pred("NESW".__contains__).rep1str()
+    aoc2018day20_part = aoc2018day20_dir.either(aoc2018day20_paren)
+    aoc2018day20_parts = aoc2018day20_part.rep()
+    aoc2018day20 = string('^') >> aoc2018day20_parts << string('$')
+
+    def aoc2018day20_expand(l):
+        out = [""]
+        for c in l:
+            if isinstance(c, str):
+                out = [x + c for x in out]
+            else:
+                out = [x + c for v in c for c in aoc2018day20_expand(v) for x in out]
+        return out
+    result = aoc2018day20.parse('^ENNWSWW(NEWS|)SSSEEN(WNSE|)EE(SWEN|)NNN$')
+    print(result)
+    print(aoc2018day20_expand(result))
