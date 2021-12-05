@@ -627,30 +627,34 @@ def snd(x):
     return x[1]
 
 def padd(x, y):
-    if len(x) == 2: return [x[0] + y[0], x[1] + y[1]]
     return [a+b for a, b in zip(x, y)]
 def pneg(v):
-    if len(v) == 2: return [-v[0], -v[1]]
     return [-i for i in v]
 def psub(x, y):
-    if len(x) == 2: return [x[0] - y[0], x[1] - y[1]]
     return [a-b for a, b in zip(x, y)]
 def pmul(m: int, v):
-    if len(v) == 2: return [m * v[0], m * v[1]]
     return [m * i for i in v]
 def pdot(x, y):
-    if len(x) == 2: return x[0] * y[0] + x[1] * y[1]
     return sum(a*b for a, b in zip(x, y))
 def pdist1(x, y=None):
     if y is not None: x = psub(x, y)
-    if len(x) == 2: return abs(x[0]) + abs(x[1])
     return sum(map(abs, x))
 def pdist2sq(x, y=None):
     if y is not None: x = psub(x, y)
-    if len(x) == 2: return (x[0] * x[0]) + (x[1] * x[1])
     return sum(i*i for i in x)
 def pdist2(v):
     return math.sqrt(pdist2sq(v))
+def pdistinf(x, y=None):
+    if y is not None: x = psub(x, y)
+    return max(map(abs, x))
+
+def signum(n: int) -> int:
+    if n > 0:
+        return 1
+    elif n == 0:
+        return 0
+    else:
+        return -1
 #endregion
 
 #region Matrices
