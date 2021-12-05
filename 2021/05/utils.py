@@ -648,6 +648,85 @@ def pdistinf(x, y=None):
     if y is not None: x = psub(x, y)
     return max(map(abs, x))
 
+Num = typing.TypeVar('Num', int, float)
+class Point(collections.UserList, typing.MutableSequence[Num]):
+    def __init__(self, *args) -> None:
+        if len(args) == 1 and isinstance(args[0], list):
+            super().__init__(args[0])
+        else:
+            super().__init__(args)
+    
+    @property
+    def x(self) -> Num:
+        return self[0]
+    
+    @property
+    def y(self) -> Num:
+        return self[1]
+    
+    @property
+    def z(self) -> Num:
+        return self[2]
+    
+    def dot(self, other: 'Point') -> Num:
+        assert len(self) == len(other), (len(self), len(other))
+        return sum(a * b for a, b in zip(self, other))
+    
+    def cross2(self, other: 'Point') -> Num:
+        assert len(self) == 2, len(self)
+        assert len(other) == 2, len(other)
+        return self[0] * other[1] + self[1] * other[0]
+    
+    def cross3(self, other: 'Point') -> 'Point':
+        assert len(self) == 3, len(self)
+        assert len(other) == 3, len(other)
+        return Point([
+            self[2] * other[3] + self[3] * other[2],
+            self[1] * other[3] + self[3] * other[1],
+            self[0] * other[1] + self[1] * other[0],
+        ])
+    
+    def dist1(self, other: 'typing.Optional[Point]' = None) -> Num:
+        if other is not None:
+            return (self - other).dist1()
+        return sum(map(abs, self))
+    
+    def dist2sq(self, other: 'typing.Optional[Point]' = None) -> Num:
+        if other is not None:
+            return (self - other).dist2sq()
+        return sum(i*i for i in self)
+    
+    def dist2(self, other: 'typing.Optional[Point]' = None) -> float:
+        return math.sqrt(self.dist2sq(other))
+    
+    def distinf(self, other: 'typing.Optional[Point]' = None) -> Num:
+        if other is not None:
+            return (self - other).distinf()
+        return max(map(abs, self))
+        
+    def __add__(self, other: 'Point') -> 'Point':
+        assert len(self) == len(other), (len(self), len(other))
+        return Point([a + b for a, b in zip(self, other)])
+    
+    def __sub__(self, other: 'Point') -> 'Point':
+        assert len(self) == len(other), (len(self), len(other))
+        return Point([a - b for a, b in zip(self, other)])
+    
+    def __neg__(self) -> 'Point':
+        return Point([-i for i in self])
+    
+    def __mul__(self, m: int) -> 'Point':
+        return Point([m * i for i in self])
+    
+    def __rmul__(self, m: int) -> 'Point':
+        return self * m
+    
+    def __truediv__(self, m: int) -> 'Point':
+        return Point([i / m for i in self])
+    
+    def __floordiv__(self, m: int) -> 'Point':
+        return Point([i // m for i in self])
+
 def signum(n: int) -> int:
     if n > 0:
         return 1
