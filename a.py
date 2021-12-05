@@ -3,8 +3,8 @@ import sys; sys.dont_write_bytecode = True; from utils import *
 def do_case(inp: str, sample=False):
     # READ THE PROBLEM FROM TOP TO BOTTOM OK
     def sprint(*a, **k): sample and print(*a, **k)
-    lines = inp.splitlines()
-    paras = lmap(str.splitlines, inp.split("\n\n"))
+    lines: typing.List[str] = inp.splitlines()
+    paras: typing.List[typing.List[str]] = lmap(str.splitlines, inp.split("\n\n"))
     out = 0
     
     if out:
