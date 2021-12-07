@@ -276,6 +276,7 @@ def a_star(
     expand: typing.Callable[[T], typing.Iterable[typing.Tuple[int, T]]],
     heuristic: typing.Optional[typing.Callable[[T], int]] = None,
 ) -> typing.Tuple[int, typing.List[T]]:
+    """Returns (distance, path)."""
     g_values, parents = dijkstra(from_node, to_node=to_node, expand=expand, heuristic=heuristic)
     if to_node not in g_values:
         raise Exception("couldn't reach to_node")
@@ -316,6 +317,7 @@ def bfs_single(
     to_node: T,
     expand: typing.Callable[[T], typing.Iterable[T]],
 ) -> typing.Tuple[int, typing.List[T]]:
+    """Returns (distance, path)."""
     g_values, parents = bfs(from_node, to_node=to_node, expand=expand)
     if to_node not in g_values:
         raise Exception("couldn't reach to_node")
