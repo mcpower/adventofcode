@@ -588,15 +588,18 @@ def turn_right(drowcol):
 def turn_left(drowcol):
     drow, dcol = drowcol
     return [-dcol, drow]
-def get_neighbours(grid, row, col, deltas, fill=None):
-    n, m = len(grid), len(grid[0])
+def dimensions(grid: typing.List) -> typing.List[int]:
     out = []
-    for i, j in deltas:
-        p_row, p_col = row+i, col+j
-        if 0 <= p_row < n and 0 <= p_col < m:
-            out.append(grid[p_row][p_col])
-        elif fill is not None:
-            out.append(fill)
+    while isinstance(grid, list):
+        out.append(len(grid))
+        grid = grid[0]
+    return out
+def neighbours(coord, dimensions, deltas) -> typing.List[typing.List[int]]:
+    out = []
+    for delta in deltas:
+        new_coord = padd(coord, delta)
+        if all(0 <= c < c_max for c, c_max in zip(new_coord, dimensions)):
+            out.append(new_coord)
     return out
 def lget(l, i):
     if len(l) == 2: return l[i[0]][i[1]]
