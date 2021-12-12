@@ -550,6 +550,30 @@ class UnionFind:
             self.parents[j] = i
             self.ranks[i] += 1
         self.num_sets -= 1
+
+
+class Grid(typing.Generic[T]):
+    """2D only!!!"""
+
+    def __init__(self, grid: typing.List[typing.List[T]]) -> None:
+        self.grid = grid
+        self.rows = len(self.grid)
+        self.cols = len(self.grid[0])
+    
+    def coords(self) -> typing.List[typing.List[int]]:
+        return [[r, c] for r in range(self.rows) for c in range(self.cols)]
+    
+    def get_row(self, row: int):
+        assert 0 <= row < self.rows, f"row {row} is OOB"
+    
+    def in_bounds(self, row: int, col: int) -> bool:
+        return 0 <= row < self.rows and 0 <= col < self.cols
+    
+    def __contains__(self, coord: typing.Union[typing.Tuple[int, int], typing.List[int]]) -> bool:
+        return self.in_bounds(*coord)
+    
+    def __getitem__(self, coord: typing.Union[typing.Tuple[int, int], typing.List[int]]) -> T:
+        return self.grid[coord[0]][coord[1]]
 #endregion
 
 #region List/Vector operations
