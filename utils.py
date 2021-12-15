@@ -235,6 +235,7 @@ def dijkstra(
     to_node: typing.Optional[T] = None,
 ) -> typing.Tuple[typing.Dict[T, int], typing.Dict[T, T]]:
     """
+    expand should return an iterable of (dist, successor node) tuples.
     Returns (distances, parents).
     Use path_from_parents(parents, node) to get a path.
     """
@@ -276,7 +277,10 @@ def a_star(
     expand: typing.Callable[[T], typing.Iterable[typing.Tuple[int, T]]],
     heuristic: typing.Optional[typing.Callable[[T], int]] = None,
 ) -> typing.Tuple[int, typing.List[T]]:
-    """Returns (distance, path)."""
+    """
+    expand should return an iterable of (dist, successor node) tuples.
+    Returns (distance, path).
+    """
     g_values, parents = dijkstra(from_node, to_node=to_node, expand=expand, heuristic=heuristic)
     if to_node not in g_values:
         raise Exception("couldn't reach to_node")
@@ -289,8 +293,8 @@ def bfs(
     to_node: typing.Optional[T] = None
 ) -> typing.Tuple[typing.Dict[T, int], typing.Dict[T, T]]:
     """
+    expand should return an iterable of successor nodes.
     Returns (distances, parents).
-    Use path_from_parents(parents, node) to get a path.
     """
     g_values = {from_node: 0}  # type: typing.Tuple[typing.Dict[T, int]]
     parents = {}  # type: typing.Dict[T, T]
@@ -317,7 +321,10 @@ def bfs_single(
     to_node: T,
     expand: typing.Callable[[T], typing.Iterable[T]],
 ) -> typing.Tuple[int, typing.List[T]]:
-    """Returns (distance, path)."""
+    """
+    expand should return an iterable of successor nodes.
+    Returns (distance, path).
+    """
     g_values, parents = bfs(from_node, to_node=to_node, expand=expand)
     if to_node not in g_values:
         raise Exception("couldn't reach to_node")
