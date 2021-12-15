@@ -231,8 +231,8 @@ def path_from_parents(parents: typing.Dict[T, T], end: T) -> typing.List[T]:
 def dijkstra(
     from_node: T,
     expand: typing.Callable[[T], typing.Iterable[typing.Tuple[int, T]]],
-    heuristic: typing.Optional[typing.Callable[[T], int]] = None,
     to_node: typing.Optional[T] = None,
+    heuristic: typing.Optional[typing.Callable[[T], int]] = None,
 ) -> typing.Tuple[typing.Dict[T, int], typing.Dict[T, T]]:
     """
     expand should return an iterable of (dist, successor node) tuples.
@@ -273,8 +273,8 @@ def dijkstra(
 
 def a_star(
     from_node: T,
-    to_node: T,
     expand: typing.Callable[[T], typing.Iterable[typing.Tuple[int, T]]],
+    to_node: T,
     heuristic: typing.Optional[typing.Callable[[T], int]] = None,
 ) -> typing.Tuple[int, typing.List[T]]:
     """
@@ -318,8 +318,8 @@ def bfs(
 
 def bfs_single(
     from_node: T,
-    to_node: T,
     expand: typing.Callable[[T], typing.Iterable[T]],
+    to_node: T,
 ) -> typing.Tuple[int, typing.List[T]]:
     """
     expand should return an iterable of successor nodes.
