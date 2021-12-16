@@ -100,6 +100,16 @@ class Parser(Generic[T]):
             rest, i = (sep >> self).rep().parse_partial(s, i)
             return [t] + rest, i
         return repsep_parser
+
+    def times(self, n: int) -> "Parser[List[T]]":
+        @parser
+        def times_parser(s: str, i: int) -> Tuple[List[T], int]:
+            out = []
+            for _ in range(n):
+                t, i = self.parse_partial(s, i)
+                out.append(t)
+            return out, i
+        return times_parser
     
     def repstr(self) -> "Parser[str]":
         """Repeats a string parser until ParseException."""
@@ -112,6 +122,9 @@ class Parser(Generic[T]):
     def joinstr(self) -> "Parser[str]":
         """Turns a parser of List[str] to str."""
         return self.map("".join)
+    
+    def timesstr(self, n: int) -> "Parser[str]":
+        return self.times(n).joinstr()
     
     def optional(self) -> "Parser[Optional[T]]":
         """"""
