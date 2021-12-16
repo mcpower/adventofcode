@@ -101,6 +101,19 @@ class Parser(Generic[T]):
             return [t] + rest, i
         return repsep_parser
 
+    def rep_until_chars(self, chars: int) -> "Parser[typing.List[T]]":
+        @parser
+        def inner(s: str, i: int):
+            target = i + chars
+            out = []
+            while i < target:
+                a, i = self.parse_partial(s, i)
+                out.append(a)
+            if i != target:
+                raise ParseException("too many chars parsed")
+            return out, i
+        return inner
+
     def times(self, n: int) -> "Parser[List[T]]":
         @parser
         def times_parser(s: str, i: int) -> Tuple[List[T], int]:

@@ -15,19 +15,6 @@ def do_case(inp: str, sample=False):
     bits_parser = lambda n: mcparser.char_pred(lambda c: c in "01").timesstr(n)
     int_parser = lambda n: bits_parser(n).map(lambda s: int(s, 2))
 
-    def rep_til_chars(p: mcparser.Parser[mcparser.T], chars: int) -> mcparser.Parser[typing.List[mcparser.T]]:
-        @mcparser.parser
-        def inner(s: str, i: int):
-            target = i + chars
-            out = []
-            while i < target:
-                a, i = p.parse_partial(s, i)
-                out.append(a)
-            if i != target:
-                raise mcparser.ParseException("too many chars parsed")
-            return out, i
-        return inner
-
     lazyparse = mcparser.lazy(lambda: parse)
 
     @mcparser.do
@@ -40,7 +27,7 @@ def do_case(inp: str, sample=False):
             length_type: int = yield int_parser(1)
             if length_type == 0:
                 bit_length: int = yield int_parser(15)
-                sout: typing.List[int] = yield rep_til_chars(lazyparse, bit_length)
+                sout: typing.List[int] = yield lazyparse.rep_until_chars(bit_length)
             else:
                 subs: int = yield int_parser(11)
                 sout: typing.List[int] = yield lazyparse.times(subs)
@@ -57,6 +44,7 @@ def do_case(inp: str, sample=False):
                     break
             return int("".join(num), 2)
     
+    # Might have leading zeroes.
     print(parse.parse_partial(bits, 0))
     if out:
         print("out:    ", out)
