@@ -12,13 +12,11 @@ def do_case(inp: str, sample=False):
     bits = "".join(bin(int(h, 16))[2:].zfill(4) for h in inp)
     MAP = {0: sum, 1: lambda s: reduce(operator.mul, s), 2: min, 3: max, 5: lambda x: x[0] > x[1], 6: lambda x: x[0] < x[1], 7:lambda x: x[0] == x[1]}
     
-    bits_parser = lambda n: mcparser.char_pred(lambda c: c in "01").timesstr(n)
+    bits_parser = lambda n: mcparser.char.filter(lambda c: c in "01").timesstr(n)
     int_parser = lambda n: bits_parser(n).map(lambda s: int(s, 2))
 
-    lazyparse = mcparser.lazy(lambda: parse)
-
-    @mcparser.do
-    def parse():
+    @mcparser.DoParser
+    def parse() -> typing.Generator[mcparser.Parser[typing.Any], typing.Any, int]:
         nonlocal out
         version: int = yield int_parser(3)
         out += version
@@ -27,14 +25,14 @@ def do_case(inp: str, sample=False):
             length_type: int = yield int_parser(1)
             if length_type == 0:
                 bit_length: int = yield int_parser(15)
-                sout: typing.List[int] = yield lazyparse.rep_until_chars(bit_length)
+                sout: typing.List[int] = yield parse.rep_until_chars(bit_length)
             else:
                 subs: int = yield int_parser(11)
-                sout: typing.List[int] = yield lazyparse.times(subs)
+                sout: typing.List[int] = yield parse.times(subs)
             assert type in MAP
-            sout = int(MAP[type](sout))
+            sout2 = int(MAP[type](sout))
             
-            return sout
+            return sout2
         else:
             num = []
             while True:

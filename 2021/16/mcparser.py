@@ -50,10 +50,11 @@ class Parser(Generic[T]):
     def filter(self, pred: Callable[[T], bool]) -> "Parser[T]":
         """Causes parser to raise ParseException if value doesn't pass pred."""
         @parser
-        def filter_parser(self, s: str, i: int) -> Tuple[T, int]:
+        def filter_parser(s: str, i: int) -> Tuple[T, int]:
             t, rest = self.parse_partial(s, i)
             if not pred(t):
                 raise ParseException(f"value {t!r} did not match predicate")
+            return t, rest
         return filter_parser
     
     def rep(self) -> "Parser[List[T]]":
@@ -203,22 +204,23 @@ class LazyParser(Generic[T], Parser[T]):
 
 lazy = LazyParser
 
-def do(f: Callable[[], Generator[Union[Parser[Any], str], Any, T]]) -> Parser[T]:
-    """Allows composition of parsers using do-like notation."""
-    @parser
-    @functools.wraps(f)
-    def parse_partial(s: str, i: int) -> Tuple[T, int]:
-        it = f()
-        parser = next(it)
-        while True:
-            if isinstance(parser, str):
-                parser = string(parser)
-            to_send, i = parser.parse_partial(s, i)
-            try:
+class DoParser(Generic[T], Parser[T]):
+    def __init__(self, f: Callable[[], Generator[Union[Parser[Any], str], Any, T]]) -> None:
+        self.f = f
+    
+    def parse_partial(self, s: str, i: int) -> Tuple[T, int]:
+        it = self.f()
+        try:
+            parser = next(it)
+            while True:
+                if isinstance(parser, str):
+                    parser = string(parser)
+                to_send, i = parser.parse_partial(s, i)
                 parser = it.send(to_send)
-            except StopIteration as s:
-                return s.value, i
-    return parse_partial
+        except StopIteration as stop:
+            return stop.value, i
+
+do = DoParser
 
 class ConcatParser(Generic[T, U], Parser[Tuple[T, U]]):
     def __init__(self, fst: Parser[T], snd: Parser[U]) -> None:
@@ -235,18 +237,6 @@ def pure(val: T) -> Parser[T]:
     """Returns a parser which immediately returns a value."""
     return parser(lambda _, i: (val, i))
 
-def char_pred(predicate: Callable[[str], bool] = lambda x: True):
-    @parser
-    def char_parser(s: str, i: int) -> Tuple[str, int]:
-        if i < len(s):
-            if not predicate(s[i]):
-                raise ParseException("char didn't meet predicate")
-            else:
-                return s[i], i+1
-        else:
-            raise ParseException("char reached eof")
-    return char_parser
-
 def string(val: str) -> Parser[str]:
     """Returns a parser that expects the exact string given."""
     @parser
@@ -260,16 +250,21 @@ def string(val: str) -> Parser[str]:
 def regex(r: str, flags: int = 0, group = 0) -> Parser[str]:
     ...
 
-# Any char.
-char = char_pred()
+@parser
+def char(s: str, i: int) -> Tuple[str, int]:
+    "Any char."
+    if i < len(s):
+        return s[i], i+1
+    else:
+        raise ParseException("char reached eof")
 
-alpha = char_pred(str.isalpha)
+alpha = char.filter(str.isalpha)
 word = alpha.rep1str()
 
-space = char_pred(str.isspace)
+space = char.filter(str.isspace)
 spaces = space.rep1str()
 
-digit_char = char_pred(str.isnumeric)
+digit_char = char.filter(str.isnumeric)
 digit = digit_char.map(int)
 number_nosign_str = digit_char.rep1str()
 number_nosign = number_nosign_str.map(int)
@@ -291,7 +286,7 @@ if __name__ == "__main__":
     print(parens.parse("((())()())"))
 
     aoc2018day20_paren = lazy(lambda: string('(') >> aoc2018day20_parts.repsep('|') << string(')'))
-    aoc2018day20_dir = char_pred("NESW".__contains__).rep1str()
+    aoc2018day20_dir = char.filter("NESW".__contains__).rep1str()
     aoc2018day20_part = aoc2018day20_dir.either(aoc2018day20_paren)
     aoc2018day20_parts = aoc2018day20_part.rep()
     aoc2018day20 = string('^') >> aoc2018day20_parts << string('$')
