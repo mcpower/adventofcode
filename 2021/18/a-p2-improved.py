@@ -7,14 +7,17 @@ def do_case(inp: str, sample=False):
     paras: typing.List[typing.List[str]] = lmap(str.splitlines, inp.split("\n\n"))
     out = 0
 
-    def to_i_depth(nested, depth=0):
+    Nested = typing.Union[typing.List["Nested"], int]
+    Pairs = typing.List[typing.Tuple[int, int]]
+
+    def to_i_depth(nested: Nested, depth: int = 0) -> Pairs:
         if isinstance(nested, list):
             return [y for x in nested for y in to_i_depth(x, depth+1)]
         else:
             return [(nested, depth)]
         
-    def explode(n_depths):
-        out = []
+    def explode(n_depths: Pairs) -> typing.Tuple[Pairs, bool]:
+        out: Pairs = []
         to_add = 0
         seen = 0
         for n, depth in n_depths:
@@ -23,9 +26,7 @@ def do_case(inp: str, sample=False):
                     to_add = n
                 elif seen == 0:
                     if out:
-                        out[-1] = list(out[-1])
-                        out[-1][0] += n
-                        out[-1] = tuple(out[-1])
+                        out[-1] = (out[-1][0] + n, out[-1][1])
                     out.append((0, depth-1))
                 else:
                     out.append((n+to_add, depth))
@@ -38,8 +39,8 @@ def do_case(inp: str, sample=False):
             assert seen >= 2
         return out, seen > 0
 
-    def split(n_depths):
-        out = []
+    def split(n_depths: Pairs) -> typing.Tuple[Pairs, bool]:
+        out: Pairs = []
         seen = False
         for n, depth in n_depths:
             if n >= 10 and not seen:
@@ -50,7 +51,7 @@ def do_case(inp: str, sample=False):
                 out.append((n, depth))
         return out, seen
     
-    def simplify(n_depths):
+    def simplify(n_depths: Pairs) -> Pairs:
         a = True
         while a:
             n_depths, a = explode(n_depths)
@@ -58,11 +59,11 @@ def do_case(inp: str, sample=False):
                 n_depths, a = split(n_depths)
         return n_depths
 
-    def add(a, b):
+    def add(a: Pairs, b: Pairs) -> Pairs:
         return simplify([(n, depth+1) for n, depth in a+b])
     
-    def to_nested_lists(n_depths):
-        out = []
+    def to_nested_lists(n_depths: Pairs) -> Nested:
+        out: typing.List[typing.List[Nested]] = []
         for n, depth in n_depths:
             while len(out) < depth:
                 out.append([])
@@ -76,18 +77,18 @@ def do_case(inp: str, sample=False):
         assert len(out) == 1
         return out[0]
 
-    def mag(x):
+    def mag(x: Nested) -> int:
         if isinstance(x, int):
             return x
         else:
             a, b = x
             return 3*mag(a) + 2*mag(b)
     
-    def process_line(line):
+    def process_line(line: str) -> Pairs:
         return to_i_depth(eval(line))
 
 
-    numbers = lmap(process_line, lines)
+    numbers = list(map(process_line, lines))
 
     part1 = mag(to_nested_lists(reduce(add, numbers)))
     print(part1)
