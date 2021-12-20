@@ -16,6 +16,7 @@ def do_case(inp: str, sample=False):
         for c, x in enumerate(row):
             if x == "#":
                 ons.add((r, c))
+    # future mcpower: this should be 1
     WTF = 3
     print(enhancement[0])
     print(enhancement[-1])
