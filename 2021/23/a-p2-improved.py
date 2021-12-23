@@ -2,26 +2,23 @@ import sys; sys.dont_write_bytecode = True; from utils import *
 
 WAITING_ROW = 1
 WAITING_COLS = [1, 2, 4, 6, 8, 10, 11]
+ROOM_COLS = [3, 5, 7, 9]
 COST = {"A": 1, "B": 10, "C": 100, "D": 1000}
-
-ROOM_COLS = [3,5,7,9]
 
 def do_case(inp: str, sample=False):
     # READ THE PROBLEM FROM TOP TO BOTTOM OK
     def sprint(*a, **k): sample and print(*a, **k)
     lines: typing.List[str] = inp.splitlines()
-    paras: typing.List[typing.List[str]] = lmap(str.splitlines, inp.split("\n\n"))
     out = 0
 
     FINAL_NODE = tuple()
-
 
     def expand(node):
         # (weight, node)
         out = []
 
-        # I wrote this line of code first, before doing anything else
-        # with the problem.
+        # I wrote this line of code first before doing anything else
+        # with the problem. It's good to know your search space!
         cur_waitings, cur_rooms = node
 
         if all(all(chr(ord('A')+i) == x for x in room) for i, room in enumerate(cur_rooms)):
@@ -38,6 +35,9 @@ def do_case(inp: str, sample=False):
         
         # Move from a room to a waiting spot.
         for room_idx, room in enumerate(cur_rooms):
+            # The below uses the fact that:
+            # - loop variables are still in-scope after the loop is finished, and
+            # - you can add an "else" to a for loop which is run if it's not `break`ed from.
             for room_position, to_move in enumerate(room):
                 if to_move == "":
                     continue
@@ -53,6 +53,10 @@ def do_case(inp: str, sample=False):
                     new_waitings = list(cur_waitings)
                     new_rooms = list(map(list, cur_rooms))
 
+                    # To get the cost of moving, I used the Manhattan distance
+                    # between the source and destination as it should always work
+                    # for this with a single corridor.
+                    # If the corridor was expanded, this wouldn't be as simple...
                     cost = pdist1((to_move_row, ROOM_COLS[room_idx]), (WAITING_ROW, waiting_col)) * COST[to_move]
                     new_waitings[waiting_idx] = to_move
                     new_rooms[room_idx][room_position] = ""
@@ -94,7 +98,7 @@ def do_case(inp: str, sample=False):
 
     rooms = []
     PART2 = ["DD", "CB", "BA", "AC"]
-    for i,room_col in enumerate(ROOM_COLS):
+    for i, room_col in enumerate(ROOM_COLS):
         a, b = [lines[row][room_col] for row in [2, 3]]
 
         rooms.append(tuple(a+PART2[i]+b))
