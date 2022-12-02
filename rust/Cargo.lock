@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "mcpower-aoc-solutions"
+name = "mcpower-aoc"
 version = "0.1.0"
