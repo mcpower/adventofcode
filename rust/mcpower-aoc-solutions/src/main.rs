@@ -1,4 +1,4 @@
-use std::{env, fs};
+use std::{cmp, env, fs};
 
 fn main() {
     // 2022 Day 1
@@ -14,8 +14,7 @@ fn main() {
         })
         .collect::<Vec<_>>();
 
-    deers.sort();
-    deers.reverse();
+    deers.sort_unstable_by_key(|x| cmp::Reverse(*x));
 
     println!("part 1: {}", deers.get(0).expect("no deers?"));
     println!("part 2: {}", deers.iter().take(3).sum::<i64>());
