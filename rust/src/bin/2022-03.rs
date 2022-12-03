@@ -45,8 +45,8 @@ fn main() {
             let b = HashSet::from_iter(b.chars());
             let c = HashSet::from_iter(c.chars());
 
-            let intersection = &(&a & &b) & &c;
-            let mut intersection = intersection.iter();
+            let a_and_b = &a & &b;
+            let mut intersection = a_and_b.intersection(&c);
             let out = intersection
                 .next()
                 .expect("three elves had nothing in common");
