@@ -22,9 +22,7 @@ fn main() {
 
     let part2 = matches
         .iter()
-        .map(|(opponent, outcome)| {
-            outcome * 3 + (opponent + (outcome - 1).rem_euclid(3)).rem_euclid(3) + 1
-        })
+        .map(|(opponent, outcome)| outcome * 3 + (opponent + (outcome - 1)).rem_euclid(3) + 1)
         .sum::<i64>();
 
     println!("part 2: {}", part2);
