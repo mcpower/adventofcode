@@ -10,10 +10,8 @@ fn main() {
         .map(|line| {
             let count = line.chars().count();
 
-            let mut left = HashSet::new();
-            left.extend(line.chars().take(count / 2));
-            let mut right = HashSet::new();
-            right.extend(line.chars().skip(count / 2));
+            let left = HashSet::<char>::from_iter(line.chars().take(count / 2));
+            let right = HashSet::from_iter(line.chars().skip(count / 2));
 
             let mut intersection = left.intersection(&right);
             let out = intersection
