@@ -35,7 +35,7 @@ fn main() {
 
     let part2 = assignments
         .iter()
-        .map(|((a, b), (c, d))| 1 - ((b < c) || (d < a)) as i64)
+        .map(|((a, b), (c, d))| !((b < c) || (d < a)) as i64)
         .sum::<i64>();
     println!("part 2: {}", part2);
 }
