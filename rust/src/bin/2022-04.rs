@@ -1,14 +1,12 @@
+use itertools::Itertools;
 use std::{env, fs};
 
 fn interval_to_pair(interval: &str) -> (i64, i64) {
-    let mut nums = interval.split('-');
-    let first = nums.next().expect("no nums");
-    let second = nums.next().expect("only one num");
-    assert_eq!(nums.next(), None, "more than two nums");
-    (
-        first.parse::<i64>().expect("first wasn't num"),
-        second.parse::<i64>().expect("second wasn't num"),
-    )
+    interval
+        .split('-')
+        .map(|num| num.parse::<i64>().expect("didn't get number"))
+        .collect_tuple()
+        .expect("didn't get 2 nums")
 }
 
 fn main() {
@@ -19,11 +17,10 @@ fn main() {
     let assignments = lines
         .iter()
         .map(|line| {
-            let mut intervals = line.split(',');
-            let first = intervals.next().expect("no interval");
-            let second = intervals.next().expect("only one interval");
-            assert_eq!(intervals.next(), None, "more than two intervals");
-            (interval_to_pair(first), interval_to_pair(second))
+            line.split('.')
+                .map(interval_to_pair)
+                .collect_tuple()
+                .expect("didn't get two intervals")
         })
         .collect::<Vec<_>>();
 
