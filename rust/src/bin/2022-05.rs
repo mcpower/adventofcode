@@ -21,15 +21,13 @@ fn main() {
     );
     let num_stacks = (numbers.chars().count() + 1) / 4;
     let mut stacks_p1: Vec<Vec<char>> = std::iter::repeat_with(Vec::new).take(num_stacks).collect();
-    for line in stacks_str {
+    for line in stacks_str.iter().rev() {
         for (i, x) in line.chars().skip(1).step_by(4).enumerate() {
             if x.is_alphabetic() {
                 stacks_p1[i].push(x);
             }
         }
     }
-    // The top of the stack is the first char we saw.
-    stacks_p1.iter_mut().for_each(|v| v.reverse());
     let mut stacks_p2 = stacks_p1.to_vec();
     let re = Regex::new(r"^move (\d+) from (\d+) to (\d+)$").unwrap();
 
