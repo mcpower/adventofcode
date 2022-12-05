@@ -20,16 +20,17 @@ fn main() {
         "length of stack row wasn't 3 mod 4"
     );
     let num_stacks = (numbers.chars().count() + 1) / 4;
-    let mut stacks: Vec<Vec<char>> = std::iter::repeat_with(Vec::new).take(num_stacks).collect();
+    let mut stacks_p1: Vec<Vec<char>> = std::iter::repeat_with(Vec::new).take(num_stacks).collect();
     for line in stacks_str {
         for (i, x) in line.chars().skip(1).step_by(4).enumerate() {
             if x.is_alphabetic() {
-                stacks[i].push(x);
+                stacks_p1[i].push(x);
             }
         }
     }
     // The top of the stack is the first char we saw.
-    stacks.iter_mut().for_each(|v| v.reverse());
+    stacks_p1.iter_mut().for_each(|v| v.reverse());
+    let mut stacks_p2 = stacks_p1.to_vec();
     let re = Regex::new(r"^move (\d+) from (\d+) to (\d+)$").unwrap();
 
     for operation in operations {
@@ -46,18 +47,29 @@ fn main() {
             })
             .collect_tuple()
             .expect("didn't get 3 things from regex capture?");
+        // part 1
         for _ in 0..num {
-            let popped = stacks[from - 1].pop().expect("move made a stack empty");
-            stacks[to - 1].push(popped);
+            let popped = stacks_p1[from - 1].pop().expect("move made a stack empty");
+            stacks_p1[to - 1].push(popped);
         }
+        // part 2
+        let remaining = stacks_p2[from - 1]
+            .len()
+            .checked_sub(num)
+            .expect("move made a stack empty");
+        let mut popped = stacks_p2[from - 1].split_off(remaining);
+        stacks_p2[to - 1].append(&mut popped);
     }
 
-    let part1 = stacks
+    let part1 = stacks_p1
         .iter()
         .map(|stack| stack.last().expect("end result had empty stacks?"))
         .join("");
     println!("part 1: {}", part1);
 
-    let part2 = 0;
+    let part2 = stacks_p2
+        .iter()
+        .map(|stack| stack.last().expect("end result had empty stacks?"))
+        .join("");
     println!("part 2: {}", part2);
 }
