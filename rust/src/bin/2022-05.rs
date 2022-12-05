@@ -13,13 +13,18 @@ fn main() {
         .expect("got more than two paras");
 
     // Eric is nice enough to add trailing spaces to the input :D
-    let (numbers, stacks_str) = stacks_str.split_last().expect("stack was empty?");
+    let (stack_indices, stacks_str) = stacks_str.split_last().expect("stack was empty?");
     assert_eq!(
-        (numbers.chars().count()) % 4,
+        (stack_indices.chars().count()) % 4,
         3,
         "length of stack row wasn't 3 mod 4"
     );
-    let num_stacks = (numbers.chars().count() + 1) / 4;
+    let num_stacks = (stack_indices.chars().count() + 1) / 4;
+    assert_eq!(
+        stack_indices,
+        &(1..=num_stacks).map(|i| format!(" {} ", i)).join(" "),
+        "stack indices were not as expected"
+    );
     let mut stacks_p1: Vec<Vec<char>> = std::iter::repeat_with(Vec::new).take(num_stacks).collect();
     for line in stacks_str.iter().rev() {
         for (i, x) in line.chars().skip(1).step_by(4).enumerate() {
