@@ -1,4 +1,4 @@
-use std::{collections::HashSet, env, fs};
+use std::{env, fs};
 
 use itertools::Itertools;
 
@@ -6,12 +6,12 @@ fn solve(inp: &str) -> (i64, i64) {
     let chars = inp.chars().collect::<Vec<_>>();
     let (part1, _first_marker) = chars
         .windows(4)
-        .find_position(|window| HashSet::<&char>::from_iter(window.iter()).len() == 4)
+        .find_position(|window| window.iter().all_unique())
         .unwrap();
     let part1 = part1 as i64 + 4;
     let (part2, _first_marker) = chars
         .windows(14)
-        .find_position(|window| HashSet::<&char>::from_iter(window.iter()).len() == 14)
+        .find_position(|window| window.iter().all_unique())
         .unwrap();
     let part2 = part2 as i64 + 14;
     (part1, part2)
