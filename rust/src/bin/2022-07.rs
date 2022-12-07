@@ -1,5 +1,7 @@
 use std::{collections::HashMap, env, fs};
 
+use once_cell::sync::OnceCell;
+
 // TODO: use &'a strs here
 #[derive(Debug)]
 enum Command {
@@ -22,7 +24,7 @@ enum FsNode {
     Dir {
         // None if haven't ls'ed yet
         children: Option<HashMap<String, FsNode>>,
-        size: Option<i64>,
+        size: OnceCell<i64>,
     },
 }
 
@@ -32,7 +34,7 @@ impl From<LsEntry> for FsNode {
             LsEntry::File { size } => FsNode::File { size },
             LsEntry::Dir => FsNode::Dir {
                 children: None,
-                size: None,
+                size: OnceCell::new(),
             },
         }
     }
@@ -41,6 +43,13 @@ impl From<LsEntry> for FsNode {
 const TARGET_SPACE: i64 = 70000000 - 30000000;
 
 impl FsNode {
+    fn unwrap_children(&self) -> &Option<HashMap<String, FsNode>> {
+        match self {
+            FsNode::File { size: _ } => panic!("tried unwrapping children of file"),
+            FsNode::Dir { children, size: _ } => children,
+        }
+    }
+
     fn unwrap_children_mut(&mut self) -> &mut Option<HashMap<String, FsNode>> {
         match self {
             FsNode::File { size: _ } => panic!("tried unwrapping children of file"),
@@ -48,26 +57,21 @@ impl FsNode {
         }
     }
 
-    fn total_size(&mut self) -> i64 {
+    fn total_size(&self) -> i64 {
         match self {
             FsNode::File { size } => *size,
-            FsNode::Dir { children, size } => match size {
-                Some(size) => *size,
-                None => {
-                    let calculated_size = children
-                        .as_mut()
-                        .expect("tried getting size of file that hasn't been ls'd")
-                        .iter_mut()
-                        .map(|(_, v)| v.total_size())
-                        .sum();
-                    *size = Some(calculated_size);
-                    calculated_size
-                }
-            },
+            FsNode::Dir { children, size } => *size.get_or_init(|| {
+                children
+                    .as_ref()
+                    .expect("tried getting size of file that hasn't been ls'd")
+                    .iter()
+                    .map(|(_, v)| v.total_size())
+                    .sum()
+            }),
         }
     }
 
-    fn part1(&mut self) -> i64 {
+    fn part1(&self) -> i64 {
         match self {
             FsNode::File { size: _ } => 0,
             FsNode::Dir {
@@ -77,10 +81,10 @@ impl FsNode {
                 let total_size = self.total_size();
                 let children_part1: i64 = self
                     // TODO: avoid this unwrap here
-                    .unwrap_children_mut()
-                    .as_mut()
+                    .unwrap_children()
+                    .as_ref()
                     .expect("tried getting size of file that hasn't been ls'd")
-                    .iter_mut()
+                    .iter()
                     .map(|(_, v)| v.part1())
                     .sum();
                 children_part1 + if total_size <= 100000 { total_size } else { 0 }
@@ -88,7 +92,7 @@ impl FsNode {
         }
     }
 
-    fn part2(&mut self, target_reduction: i64) -> Option<i64> {
+    fn part2(&self, target_reduction: i64) -> Option<i64> {
         match self {
             FsNode::File { size: _ } => None,
             FsNode::Dir {
@@ -98,10 +102,10 @@ impl FsNode {
                 let total_size = self.total_size();
                 let best_child = self
                     // TODO: avoid this unwrap here
-                    .unwrap_children_mut()
-                    .as_mut()
+                    .unwrap_children()
+                    .as_ref()
                     .expect("tried getting size of file that hasn't been ls'd")
-                    .iter_mut()
+                    .iter()
                     .filter_map(|(_, v)| v.part2(target_reduction))
                     .min();
                 if let Some(ans) = best_child {
@@ -119,7 +123,7 @@ impl FsNode {
 fn solve(inp: &str) -> (i64, i64) {
     let mut root = FsNode::Dir {
         children: None,
-        size: None,
+        size: OnceCell::new(),
     };
     // this is horrible but I can't be bothered reading too-many-lists to figure
     // out how to refer to a FsNode's parent
