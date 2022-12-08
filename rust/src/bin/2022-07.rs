@@ -51,21 +51,18 @@ impl<'a, 's> FsDir<'a, 's> {
 
     fn part2(&self, target_reduction: i64) -> Option<i64> {
         let total_size = self.get_size();
-        let best_child = self
-            .children
+        self.children
             .get()
             .expect("tried getting part 2 of directory that hasn't been ls'ed")
             .iter()
             .filter_map(|(_, v)| v.as_dir())
             .filter_map(|dir| dir.part2(target_reduction))
-            .min();
-        if let Some(ans) = best_child {
-            Some(ans)
-        } else if total_size >= target_reduction {
-            Some(total_size)
-        } else {
-            None
-        }
+            .chain(if total_size >= target_reduction {
+                Some(total_size)
+            } else {
+                None
+            })
+            .min()
     }
 }
 
