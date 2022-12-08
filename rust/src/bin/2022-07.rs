@@ -3,37 +3,48 @@ use std::{collections::HashMap, env, fs};
 use once_cell::unsync::OnceCell;
 
 #[derive(Debug)]
-enum FsNode<'a> {
+enum FsNode<'a, 's> {
     File {
+        parent: &'a FsNode<'a, 's>,
         size: i64,
     },
     Dir {
-        children: OnceCell<HashMap<&'a str, FsNode<'a>>>,
+        parent: Option<&'a FsNode<'a, 's>>,
+        children: OnceCell<HashMap<&'s str, FsNode<'a, 's>>>,
         size: OnceCell<i64>,
     },
 }
 
 const TARGET_SPACE: i64 = 70000000 - 30000000;
 
-impl<'a> FsNode<'a> {
-    fn new_dir() -> FsNode<'a> {
+impl<'a, 's> FsNode<'a, 's> {
+    fn new_dir(parent: Option<&'a FsNode<'a, 's>>) -> FsNode<'a, 's> {
         FsNode::Dir {
+            parent,
             children: OnceCell::new(),
             size: OnceCell::new(),
         }
     }
 
-    fn unwrap_children<'b: 'a>(&'b self) -> &'b OnceCell<HashMap<&'a str, FsNode>> {
+    fn unwrap_children<'b: 's>(&'b self) -> &'b OnceCell<HashMap<&'s str, FsNode>> {
         match self {
-            FsNode::File { size: _ } => panic!("tried unwrapping children of file"),
-            FsNode::Dir { children, size: _ } => children,
+            FsNode::File { size: _, parent: _ } => panic!("tried unwrapping children of file"),
+            FsNode::Dir {
+                children,
+                size: _,
+                parent: _,
+            } => children,
         }
     }
 
     fn total_size(&self) -> i64 {
         match self {
-            FsNode::File { size } => *size,
-            FsNode::Dir { children, size } => *size.get_or_init(|| {
+            FsNode::File { size, parent: _ } => *size,
+            FsNode::Dir {
+                children,
+                size,
+                parent: _,
+            } => *size.get_or_init(|| {
                 children
                     .get()
                     .as_ref()
@@ -47,8 +58,12 @@ impl<'a> FsNode<'a> {
 
     fn part1(&self) -> i64 {
         match self {
-            FsNode::File { size: _ } => 0,
-            FsNode::Dir { children, size: _ } => {
+            FsNode::File { size: _, parent: _ } => 0,
+            FsNode::Dir {
+                children,
+                size: _,
+                parent: _,
+            } => {
                 let total_size = self.total_size();
                 let children_part1: i64 = children
                     .get()
@@ -63,8 +78,12 @@ impl<'a> FsNode<'a> {
 
     fn part2(&self, target_reduction: i64) -> Option<i64> {
         match self {
-            FsNode::File { size: _ } => None,
-            FsNode::Dir { children, size: _ } => {
+            FsNode::File { size: _, parent: _ } => None,
+            FsNode::Dir {
+                children,
+                size: _,
+                parent: _,
+            } => {
                 let total_size = self.total_size();
                 let best_child = children
                     .get()
@@ -82,16 +101,18 @@ impl<'a> FsNode<'a> {
             }
         }
     }
+
+    fn get_parent(&self) -> &'a FsNode<'a, 's> {
+        match self {
+            FsNode::File { parent, .. } => parent,
+            FsNode::Dir { parent, .. } => parent.expect("tried getting parent of root"),
+        }
+    }
 }
 
 fn solve(inp: &str) -> (i64, i64) {
-    let root = FsNode::Dir {
-        children: OnceCell::new(),
-        size: OnceCell::new(),
-    };
-    // this is horrible but I can't be bothered reading too-many-lists to figure
-    // out how to refer to a FsNode's parent
-    let mut cur_path: Vec<&str> = vec![];
+    let root = FsNode::new_dir(None);
+    let mut cur_dir = &root;
 
     for command in inp
         .strip_prefix("$ ")
@@ -105,37 +126,33 @@ fn solve(inp: &str) -> (i64, i64) {
                 .map(|line| {
                     let (size, filename) = line.split_once(' ').expect("ls line didn't have space");
                     let entry = if size == "dir" {
-                        FsNode::new_dir()
+                        FsNode::new_dir(Some(cur_dir))
                     } else {
                         FsNode::File {
                             size: size.parse().expect("size wasn't dir or a number"),
+                            parent: cur_dir,
                         }
                     };
                     (filename, entry)
                 })
                 .collect();
-            let cur_children = cur_path
-                .iter()
-                .fold(root.unwrap_children(), |children, child| {
-                    children
-                        .get()
-                        .as_ref()
-                        .expect("tried going into child which hasn't been ls'ed yet")
-                        .get(child)
-                        .expect("tried going into child which doesn't exist")
-                        .unwrap_children()
-                });
-
-            cur_children
+            cur_dir
+                .unwrap_children()
                 .set(entries)
                 .expect("tried ls'ing a directory that has already been ls'ed before");
         } else if let Some(dir) = command.strip_prefix("cd ") {
             match dir {
-                "/" => cur_path.clear(),
-                ".." => {
-                    cur_path.pop();
+                "/" => cur_dir = &root,
+                ".." => cur_dir = cur_dir.get_parent(),
+
+                dir => {
+                    cur_dir = cur_dir
+                        .unwrap_children()
+                        .get()
+                        .expect("tried cd'ing from a file??")
+                        .get(dir)
+                        .expect("tried cd'ing into a directory that doesn't exist")
                 }
-                dir => cur_path.push(dir),
             }
         } else {
             unreachable!("command wasn't ls or cd")
