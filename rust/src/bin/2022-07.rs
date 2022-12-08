@@ -28,7 +28,6 @@ impl<'a, 's> FsDir<'a, 's> {
         *self.size.get_or_init(|| {
             self.children
                 .get()
-                .as_ref()
                 .expect("tried getting size of directory that hasn't been ls'd")
                 .iter()
                 .map(|(_, v)| v.get_size())
@@ -118,8 +117,7 @@ fn solve(inp: &str) -> (i64, i64) {
             match dir {
                 "/" => cur_dir = &root,
                 ".." => cur_dir = cur_dir.parent.expect("tried cd'ing .. from /"),
-
-                dir => {
+                _ => {
                     cur_dir = cur_dir
                         .children
                         .get()
