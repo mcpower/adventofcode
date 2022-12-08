@@ -22,8 +22,7 @@ enum FsNode {
         size: i64,
     },
     Dir {
-        // None if haven't ls'ed yet
-        children: Option<HashMap<String, FsNode>>,
+        children: OnceCell<HashMap<String, FsNode>>,
         size: OnceCell<i64>,
     },
 }
@@ -33,7 +32,7 @@ impl From<LsEntry> for FsNode {
         match entry {
             LsEntry::File { size } => FsNode::File { size },
             LsEntry::Dir => FsNode::Dir {
-                children: None,
+                children: OnceCell::new(),
                 size: OnceCell::new(),
             },
         }
@@ -43,14 +42,7 @@ impl From<LsEntry> for FsNode {
 const TARGET_SPACE: i64 = 70000000 - 30000000;
 
 impl FsNode {
-    fn unwrap_children(&self) -> &Option<HashMap<String, FsNode>> {
-        match self {
-            FsNode::File { size: _ } => panic!("tried unwrapping children of file"),
-            FsNode::Dir { children, size: _ } => children,
-        }
-    }
-
-    fn unwrap_children_mut(&mut self) -> &mut Option<HashMap<String, FsNode>> {
+    fn unwrap_children(&self) -> &OnceCell<HashMap<String, FsNode>> {
         match self {
             FsNode::File { size: _ } => panic!("tried unwrapping children of file"),
             FsNode::Dir { children, size: _ } => children,
@@ -62,6 +54,7 @@ impl FsNode {
             FsNode::File { size } => *size,
             FsNode::Dir { children, size } => *size.get_or_init(|| {
                 children
+                    .get()
                     .as_ref()
                     .expect("tried getting size of file that hasn't been ls'd")
                     .iter()
@@ -74,15 +67,10 @@ impl FsNode {
     fn part1(&self) -> i64 {
         match self {
             FsNode::File { size: _ } => 0,
-            FsNode::Dir {
-                children: _,
-                size: _,
-            } => {
+            FsNode::Dir { children, size: _ } => {
                 let total_size = self.total_size();
-                let children_part1: i64 = self
-                    // TODO: avoid this unwrap here
-                    .unwrap_children()
-                    .as_ref()
+                let children_part1: i64 = children
+                    .get()
                     .expect("tried getting size of file that hasn't been ls'd")
                     .iter()
                     .map(|(_, v)| v.part1())
@@ -95,15 +83,10 @@ impl FsNode {
     fn part2(&self, target_reduction: i64) -> Option<i64> {
         match self {
             FsNode::File { size: _ } => None,
-            FsNode::Dir {
-                children: _,
-                size: _,
-            } => {
+            FsNode::Dir { children, size: _ } => {
                 let total_size = self.total_size();
-                let best_child = self
-                    // TODO: avoid this unwrap here
-                    .unwrap_children()
-                    .as_ref()
+                let best_child = children
+                    .get()
                     .expect("tried getting size of file that hasn't been ls'd")
                     .iter()
                     .filter_map(|(_, v)| v.part2(target_reduction))
@@ -121,8 +104,8 @@ impl FsNode {
 }
 
 fn solve(inp: &str) -> (i64, i64) {
-    let mut root = FsNode::Dir {
-        children: None,
+    let root = FsNode::Dir {
+        children: OnceCell::new(),
         size: OnceCell::new(),
     };
     // this is horrible but I can't be bothered reading too-many-lists to figure
@@ -174,19 +157,19 @@ fn solve(inp: &str) -> (i64, i64) {
                 let cur_children =
                     cur_path
                         .iter()
-                        .fold(root.unwrap_children_mut(), |children, child| {
+                        .fold(root.unwrap_children(), |children, child| {
                             children
-                                .as_mut()
+                                .get()
+                                .as_ref()
                                 .expect("tried going into child which hasn't been ls'ed yet")
-                                .get_mut(child)
+                                .get(child)
                                 .expect("tried going into child which doesn't exist")
-                                .unwrap_children_mut()
+                                .unwrap_children()
                         });
-                assert!(
-                    matches!(cur_children, None),
-                    "tried ls'ing a directory that has already been ls'ed before"
-                );
-                *cur_children = Some(entries.into_iter().map(|(k, v)| (k, v.into())).collect());
+
+                cur_children
+                    .set(entries.into_iter().map(|(k, v)| (k, v.into())).collect())
+                    .expect("tried ls'ing a directory that has already been ls'ed before");
             }
         });
     let part1 = root.part1();
