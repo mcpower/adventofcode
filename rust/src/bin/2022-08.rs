@@ -61,30 +61,30 @@ fn solve(inp: &str) -> (i64, i64) {
         for col in 0..cols {
             let cur_height = grid[row][col];
             let mut right = 0;
-            for other_col in col + 1..cols {
+            for other_height in grid[row].iter().skip(col + 1) {
                 right += 1;
-                if grid[row][other_col] >= cur_height {
+                if *other_height >= cur_height {
                     break;
                 }
             }
             let mut left = 0;
-            for other_col in (0..col).rev() {
+            for other_height in grid[row].iter().take(col).rev() {
                 left += 1;
-                if grid[row][other_col] >= cur_height {
+                if *other_height >= cur_height {
                     break;
                 }
             }
             let mut down = 0;
-            for other_row in row + 1..rows {
+            for other_height in grid.iter().skip(row + 1).map(|row| row[col]) {
                 down += 1;
-                if grid[other_row][col] >= cur_height {
+                if other_height >= cur_height {
                     break;
                 }
             }
             let mut up = 0;
-            for other_row in (0..row).rev() {
+            for other_height in grid.iter().take(row).rev().map(|row| row[col]) {
                 up += 1;
-                if grid[other_row][col] >= cur_height {
+                if other_height >= cur_height {
                     break;
                 }
             }
