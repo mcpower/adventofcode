@@ -56,7 +56,42 @@ fn solve(inp: &str) -> (i64, i64) {
         .map(|row| row.iter().map(|x| -> i64 { (*x).into() }).sum::<i64>())
         .sum();
 
-    let part2 = 0;
+    let mut part2 = 0;
+    for row in 0..rows {
+        for col in 0..cols {
+            let cur_height = grid[row][col];
+            let mut right = 0;
+            for other_col in col + 1..cols {
+                right += 1;
+                if grid[row][other_col] >= cur_height {
+                    break;
+                }
+            }
+            let mut left = 0;
+            for other_col in (0..col).rev() {
+                left += 1;
+                if grid[row][other_col] >= cur_height {
+                    break;
+                }
+            }
+            let mut down = 0;
+            for other_row in row + 1..rows {
+                down += 1;
+                if grid[other_row][col] >= cur_height {
+                    break;
+                }
+            }
+            let mut up = 0;
+            for other_row in (0..row).rev() {
+                up += 1;
+                if grid[other_row][col] >= cur_height {
+                    break;
+                }
+            }
+            part2 = part2.max(up * down * left * right);
+        }
+    }
+
     (part1, part2)
 }
 
