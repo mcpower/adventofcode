@@ -3,27 +3,27 @@ use std::{collections::HashMap, env, fs};
 use once_cell::unsync::OnceCell;
 
 #[derive(Debug)]
-enum FsNode {
+enum FsNode<'a> {
     File {
         size: i64,
     },
     Dir {
-        children: OnceCell<HashMap<String, FsNode>>,
+        children: OnceCell<HashMap<&'a str, FsNode<'a>>>,
         size: OnceCell<i64>,
     },
 }
 
 const TARGET_SPACE: i64 = 70000000 - 30000000;
 
-impl FsNode {
-    fn new_dir() -> FsNode {
+impl<'a> FsNode<'a> {
+    fn new_dir() -> FsNode<'a> {
         FsNode::Dir {
             children: OnceCell::new(),
             size: OnceCell::new(),
         }
     }
 
-    fn unwrap_children(&self) -> &OnceCell<HashMap<String, FsNode>> {
+    fn unwrap_children<'b: 'a>(&'b self) -> &'b OnceCell<HashMap<&'a str, FsNode>> {
         match self {
             FsNode::File { size: _ } => panic!("tried unwrapping children of file"),
             FsNode::Dir { children, size: _ } => children,
@@ -91,7 +91,7 @@ fn solve(inp: &str) -> (i64, i64) {
     };
     // this is horrible but I can't be bothered reading too-many-lists to figure
     // out how to refer to a FsNode's parent
-    let mut cur_path: Vec<String> = vec![];
+    let mut cur_path: Vec<&str> = vec![];
 
     for command in inp
         .strip_prefix("$ ")
@@ -111,7 +111,7 @@ fn solve(inp: &str) -> (i64, i64) {
                             size: size.parse().expect("size wasn't dir or a number"),
                         }
                     };
-                    (filename.to_owned(), entry)
+                    (filename, entry)
                 })
                 .collect();
             let cur_children = cur_path
@@ -135,7 +135,7 @@ fn solve(inp: &str) -> (i64, i64) {
                 ".." => {
                     cur_path.pop();
                 }
-                dir => cur_path.push(dir.to_owned()),
+                dir => cur_path.push(dir),
             }
         } else {
             unreachable!("command wasn't ls or cd")
