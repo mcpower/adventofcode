@@ -1,6 +1,6 @@
 use std::{collections::HashMap, env, fs};
 
-use once_cell::sync::OnceCell;
+use once_cell::unsync::OnceCell;
 
 // TODO: use &'a strs here
 #[derive(Debug)]
