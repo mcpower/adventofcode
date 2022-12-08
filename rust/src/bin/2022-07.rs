@@ -4,114 +4,92 @@ use once_cell::unsync::OnceCell;
 
 #[derive(Debug)]
 enum FsNode<'a, 's> {
-    File {
-        parent: &'a FsNode<'a, 's>,
-        size: i64,
-    },
-    Dir {
-        parent: Option<&'a FsNode<'a, 's>>,
-        children: OnceCell<HashMap<&'s str, FsNode<'a, 's>>>,
-        size: OnceCell<i64>,
-    },
+    Dir(FsDir<'a, 's>),
+    File { size: i64 },
 }
 
-const TARGET_SPACE: i64 = 70000000 - 30000000;
+#[derive(Debug)]
+struct FsDir<'a, 's> {
+    parent: Option<&'a FsDir<'a, 's>>,
+    children: OnceCell<HashMap<&'s str, FsNode<'a, 's>>>,
+    size: OnceCell<i64>,
+}
 
-impl<'a, 's> FsNode<'a, 's> {
-    fn new_dir(parent: Option<&'a FsNode<'a, 's>>) -> FsNode<'a, 's> {
-        FsNode::Dir {
+impl<'a, 's> FsDir<'a, 's> {
+    fn new_dir(parent: Option<&'a FsDir<'a, 's>>) -> FsDir<'a, 's> {
+        FsDir {
             parent,
             children: OnceCell::new(),
             size: OnceCell::new(),
         }
     }
 
-    fn unwrap_children<'b: 's>(&'b self) -> &'b OnceCell<HashMap<&'s str, FsNode>> {
-        match self {
-            FsNode::File { size: _, parent: _ } => panic!("tried unwrapping children of file"),
-            FsNode::Dir {
-                children,
-                size: _,
-                parent: _,
-            } => children,
-        }
-    }
-
-    fn total_size(&self) -> i64 {
-        match self {
-            FsNode::File { size, parent: _ } => *size,
-            FsNode::Dir {
-                children,
-                size,
-                parent: _,
-            } => *size.get_or_init(|| {
-                children
-                    .get()
-                    .as_ref()
-                    .expect("tried getting size of file that hasn't been ls'd")
-                    .iter()
-                    .map(|(_, v)| v.total_size())
-                    .sum()
-            }),
-        }
+    fn get_size(&self) -> i64 {
+        *self.size.get_or_init(|| {
+            self.children
+                .get()
+                .as_ref()
+                .expect("tried getting size of directory that hasn't been ls'd")
+                .iter()
+                .map(|(_, v)| v.get_size())
+                .sum()
+        })
     }
 
     fn part1(&self) -> i64 {
-        match self {
-            FsNode::File { size: _, parent: _ } => 0,
-            FsNode::Dir {
-                children,
-                size: _,
-                parent: _,
-            } => {
-                let total_size = self.total_size();
-                let children_part1: i64 = children
-                    .get()
-                    .expect("tried getting size of file that hasn't been ls'd")
-                    .iter()
-                    .map(|(_, v)| v.part1())
-                    .sum();
-                children_part1 + if total_size <= 100000 { total_size } else { 0 }
-            }
-        }
+        let total_size = self.get_size();
+        let children_part1: i64 = self
+            .children
+            .get()
+            .expect("tried getting part 1 of directory that hasn't been ls'd")
+            .iter()
+            .filter_map(|(_, v)| v.as_dir())
+            .map(FsDir::part1)
+            .sum();
+        children_part1 + if total_size <= 100000 { total_size } else { 0 }
     }
 
     fn part2(&self, target_reduction: i64) -> Option<i64> {
+        let total_size = self.get_size();
+        let best_child = self
+            .children
+            .get()
+            .expect("tried getting part 2 of directory that hasn't been ls'ed")
+            .iter()
+            .filter_map(|(_, v)| v.as_dir())
+            .filter_map(|dir| dir.part2(target_reduction))
+            .min();
+        if let Some(ans) = best_child {
+            Some(ans)
+        } else if total_size >= target_reduction {
+            Some(total_size)
+        } else {
+            None
+        }
+    }
+}
+
+const TARGET_SPACE: i64 = 70000000 - 30000000;
+
+impl<'a, 's> FsNode<'a, 's> {
+    fn get_size(&self) -> i64 {
         match self {
-            FsNode::File { size: _, parent: _ } => None,
-            FsNode::Dir {
-                children,
-                size: _,
-                parent: _,
-            } => {
-                let total_size = self.total_size();
-                let best_child = children
-                    .get()
-                    .expect("tried getting size of file that hasn't been ls'd")
-                    .iter()
-                    .filter_map(|(_, v)| v.part2(target_reduction))
-                    .min();
-                if let Some(ans) = best_child {
-                    Some(ans)
-                } else if total_size >= target_reduction {
-                    Some(total_size)
-                } else {
-                    None
-                }
-            }
+            FsNode::File { size } => *size,
+            FsNode::Dir(dir) => dir.get_size(),
         }
     }
 
-    fn get_parent(&self) -> &'a FsNode<'a, 's> {
-        match self {
-            FsNode::File { parent, .. } => parent,
-            FsNode::Dir { parent, .. } => parent.expect("tried getting parent of root"),
+    fn as_dir(&self) -> Option<&FsDir<'a, 's>> {
+        if let Self::Dir(v) = self {
+            Some(v)
+        } else {
+            None
         }
     }
 }
 
 fn solve(inp: &str) -> (i64, i64) {
-    let root = FsNode::new_dir(None);
+    let root = FsDir::new_dir(None);
     let mut cur_dir = &root;
 
     for command in inp
@@ -126,32 +104,33 @@ fn solve(inp: &str) -> (i64, i64) {
                 .map(|line| {
                     let (size, filename) = line.split_once(' ').expect("ls line didn't have space");
                     let entry = if size == "dir" {
-                        FsNode::new_dir(Some(cur_dir))
+                        FsNode::Dir(FsDir::new_dir(Some(cur_dir)))
                     } else {
                         FsNode::File {
                             size: size.parse().expect("size wasn't dir or a number"),
-                            parent: cur_dir,
                         }
                     };
                     (filename, entry)
                 })
                 .collect();
             cur_dir
-                .unwrap_children()
+                .children
                 .set(entries)
                 .expect("tried ls'ing a directory that has already been ls'ed before");
         } else if let Some(dir) = command.strip_prefix("cd ") {
             match dir {
                 "/" => cur_dir = &root,
-                ".." => cur_dir = cur_dir.get_parent(),
+                ".." => cur_dir = cur_dir.parent.expect("tried cd'ing .. from /"),
 
                 dir => {
                     cur_dir = cur_dir
-                        .unwrap_children()
+                        .children
                         .get()
-                        .expect("tried cd'ing from a file??")
+                        .expect("tried cd'ing from a directory that hasn't been ls'ed")
                         .get(dir)
                         .expect("tried cd'ing into a directory that doesn't exist")
+                        .as_dir()
+                        .expect("tried cd'ing to a file")
                 }
             }
         } else {
@@ -160,7 +139,7 @@ fn solve(inp: &str) -> (i64, i64) {
     }
     let part1 = root.part1();
 
-    let target_reduction = root.total_size() - TARGET_SPACE;
+    let target_reduction = root.get_size() - TARGET_SPACE;
 
     let part2 = root
         .part2(target_reduction)
