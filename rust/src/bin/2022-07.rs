@@ -2,20 +2,6 @@ use std::{collections::HashMap, env, fs};
 
 use once_cell::unsync::OnceCell;
 
-// TODO: use &'a strs here
-#[derive(Debug)]
-enum Command {
-    Cd { dir: String },
-    Ls { entries: HashMap<String, LsEntry> },
-}
-
-// TODO: use NonZeroU64 here
-#[derive(Debug)]
-enum LsEntry {
-    File { size: i64 },
-    Dir,
-}
-
 #[derive(Debug)]
 enum FsNode {
     File {
@@ -27,21 +13,16 @@ enum FsNode {
     },
 }
 
-impl From<LsEntry> for FsNode {
-    fn from(entry: LsEntry) -> Self {
-        match entry {
-            LsEntry::File { size } => FsNode::File { size },
-            LsEntry::Dir => FsNode::Dir {
-                children: OnceCell::new(),
-                size: OnceCell::new(),
-            },
-        }
-    }
-}
-
 const TARGET_SPACE: i64 = 70000000 - 30000000;
 
 impl FsNode {
+    fn new_dir() -> FsNode {
+        FsNode::Dir {
+            children: OnceCell::new(),
+            size: OnceCell::new(),
+        }
+    }
+
     fn unwrap_children(&self) -> &OnceCell<HashMap<String, FsNode>> {
         match self {
             FsNode::File { size: _ } => panic!("tried unwrapping children of file"),
@@ -112,66 +93,54 @@ fn solve(inp: &str) -> (i64, i64) {
     // out how to refer to a FsNode's parent
     let mut cur_path: Vec<String> = vec![];
 
-    inp.strip_prefix("$ ")
+    for command in inp
+        .strip_prefix("$ ")
         .expect("input didn't start with $ ")
         .split("\n$ ")
-        .map(|command| {
-            let mut lines = command.lines();
-            let command = lines.next().expect("command was empty?");
-            if command == "ls" {
-                Command::Ls {
-                    entries: lines
-                        .map(|line| {
-                            let (size, filename) =
-                                line.split_once(' ').expect("ls line didn't have space");
-                            let entry = if size == "dir" {
-                                LsEntry::Dir
-                            } else {
-                                LsEntry::File {
-                                    size: size.parse().expect("size wasn't dir or a number"),
-                                }
-                            };
-                            (filename.to_owned(), entry)
-                        })
-                        .collect(),
-                }
-            } else if let Some(dir) = command.strip_prefix("cd ") {
-                Command::Cd {
-                    dir: dir.to_owned(),
-                }
-            } else {
-                unreachable!("command wasn't ls or cd")
-            }
-        })
-        .for_each(|command| match command {
-            Command::Cd { dir } => match dir.as_str() {
+    {
+        let mut lines = command.lines();
+        let command = lines.next().expect("command was empty?");
+        if command == "ls" {
+            let entries = lines
+                .map(|line| {
+                    let (size, filename) = line.split_once(' ').expect("ls line didn't have space");
+                    let entry = if size == "dir" {
+                        FsNode::new_dir()
+                    } else {
+                        FsNode::File {
+                            size: size.parse().expect("size wasn't dir or a number"),
+                        }
+                    };
+                    (filename.to_owned(), entry)
+                })
+                .collect();
+            let cur_children = cur_path
+                .iter()
+                .fold(root.unwrap_children(), |children, child| {
+                    children
+                        .get()
+                        .as_ref()
+                        .expect("tried going into child which hasn't been ls'ed yet")
+                        .get(child)
+                        .expect("tried going into child which doesn't exist")
+                        .unwrap_children()
+                });
+
+            cur_children
+                .set(entries)
+                .expect("tried ls'ing a directory that has already been ls'ed before");
+        } else if let Some(dir) = command.strip_prefix("cd ") {
+            match dir {
                 "/" => cur_path.clear(),
                 ".." => {
                     cur_path.pop();
                 }
                 dir => cur_path.push(dir.to_owned()),
-            },
-            Command::Ls { entries } => {
-                // get reference to current dir FsNode children
-                // this will be fun and inefficient...
-                let cur_children =
-                    cur_path
-                        .iter()
-                        .fold(root.unwrap_children(), |children, child| {
-                            children
-                                .get()
-                                .as_ref()
-                                .expect("tried going into child which hasn't been ls'ed yet")
-                                .get(child)
-                                .expect("tried going into child which doesn't exist")
-                                .unwrap_children()
-                        });
-
-                cur_children
-                    .set(entries.into_iter().map(|(k, v)| (k, v.into())).collect())
-                    .expect("tried ls'ing a directory that has already been ls'ed before");
             }
-        });
+        } else {
+            unreachable!("command wasn't ls or cd")
+        }
+    }
     let part1 = root.part1();
 
     let target_reduction = root.total_size() - TARGET_SPACE;
