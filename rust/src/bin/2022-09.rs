@@ -1,9 +1,9 @@
 use std::{collections::HashSet, env, fs};
 
-use mcpower_aoc::vector::Point;
+use mcpower_aoc::vector::Vec2;
 
 fn solve(inp: &str) -> (i64, i64) {
-    let mut tails = [Point(0, 0); 10];
+    let mut tails = [Vec2(0, 0); 10];
     let mut part1_seen = HashSet::new();
     let mut part2_seen = HashSet::new();
     part1_seen.insert(tails[1]);
@@ -13,10 +13,10 @@ fn solve(inp: &str) -> (i64, i64) {
         let (dir, num) = line.split_once(' ').expect("line didn't have space");
         let num = num.parse::<i64>().expect("second part of line wasn't num");
         let dir = match dir {
-            "U" => Point(-1, 0),
-            "D" => Point(1, 0),
-            "L" => Point(0, -1),
-            "R" => Point(0, 1),
+            "U" => Vec2(-1, 0),
+            "D" => Vec2(1, 0),
+            "L" => Vec2(0, -1),
+            "R" => Vec2(0, 1),
             _ => unreachable!("dir wasn't UDLR"),
         };
         for _ in 0..num {
@@ -25,7 +25,7 @@ fn solve(inp: &str) -> (i64, i64) {
             for tail in tails.iter_mut().skip(0) {
                 let delta = head - *tail;
                 if delta.norm_inf() > 1 {
-                    let tail_dir = Point(delta.0.signum(), delta.1.signum());
+                    let tail_dir = Vec2(delta.0.signum(), delta.1.signum());
                     *tail += tail_dir;
                 }
                 head = *tail;
