@@ -25,7 +25,7 @@ fn solve(inp: &str) -> (i64, i64) {
             for tail in tails.iter_mut().skip(0) {
                 let delta = head - *tail;
                 if delta.norm_inf() > 1 {
-                    let tail_dir = Vec2(delta.0.signum(), delta.1.signum());
+                    let tail_dir = delta.map(i64::signum);
                     *tail += tail_dir;
                 }
                 head = *tail;
