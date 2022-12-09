@@ -1,44 +1,6 @@
 use std::{collections::HashSet, env, fs};
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
-struct Point(i64, i64);
-
-impl Point {
-    fn norm_inf(&self) -> i64 {
-        self.0.abs().max(self.1.abs())
-    }
-}
-
-impl std::ops::Add<Point> for Point {
-    type Output = Point;
-
-    fn add(self, rhs: Point) -> Self::Output {
-        Point(self.0 + rhs.0, self.1 + rhs.1)
-    }
-}
-
-impl std::ops::AddAssign<Point> for Point {
-    fn add_assign(&mut self, rhs: Point) {
-        self.0 += rhs.0;
-        self.1 += rhs.1;
-    }
-}
-
-impl std::ops::Neg for Point {
-    type Output = Point;
-
-    fn neg(self) -> Self::Output {
-        Point(-self.0, -self.1)
-    }
-}
-
-impl std::ops::Sub<Point> for Point {
-    type Output = Point;
-
-    fn sub(self, rhs: Point) -> Self::Output {
-        Point(self.0 - rhs.0, self.1 - rhs.1)
-    }
-}
+use mcpower_aoc::vector::Point;
 
 fn solve(inp: &str) -> (i64, i64) {
     let mut tails = [Point(0, 0); 10];
