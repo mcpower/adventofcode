@@ -1,6 +1,8 @@
 use std::{
     env,
     ffi::OsStr,
+    fmt::Display,
+    fs,
     path::{Path, PathBuf},
 };
 
@@ -48,4 +50,32 @@ pub fn get_aoc_start(year: AocYear, day: AocDay) -> DateTime<FixedOffset> {
                 .and_time(Default::default()),
         )
         .unwrap()
+}
+
+pub fn run_samples_and_arg<T, U, F>(solve: F, samples: &[&str])
+where
+    T: Display,
+    U: Display,
+    F: Fn(&str) -> (T, U),
+{
+    for sample in samples
+        .iter()
+        .map(|s| s.trim_start())
+        .filter(|s| !s.is_empty())
+    {
+        println!("=== SAMPLE ===");
+        println!("input: {:?}", &sample[..20]);
+        let (part1, part2) = solve(sample);
+        println!("part 1:\n{}", part1);
+        println!("part 2:\n{}", part2);
+        println!();
+    }
+
+    let filename = env::args().nth(1).expect("missing filename arg");
+    let contents = fs::read_to_string(filename).expect("opening file failed");
+
+    println!("=== ACTUAL ===");
+    let (part1, part2) = solve(&contents);
+    println!("part 1:\n{}", part1);
+    println!("part 2:\n{}", part2);
 }
