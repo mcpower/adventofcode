@@ -41,16 +41,29 @@ fn solve(inp: &str) -> (i64, String) {
 }
 
 fn main() {
-    dbg!(solve(
-        r"
-noop
-addx 3
-addx -5
-"
-        .trim_start()
-    ));
-    dbg!(solve(
-        r"
+    for sample in SAMPLES
+        .iter()
+        .map(|s| s.trim_start())
+        .filter(|s| !s.is_empty())
+    {
+        println!("=== SAMPLE ===");
+        println!("input: {:?}", &sample[..20]);
+        let (part1, part2) = solve(sample);
+        println!("part 1:\n{}", part1);
+        println!("part 2:\n{}", part2);
+        println!();
+    }
+    let filename = env::args().nth(1).expect("missing filename arg");
+    let contents = fs::read_to_string(filename).expect("opening file failed");
+
+    println!("=== ACTUAL ===");
+    let (part1, part2) = solve(&contents);
+    println!("part 1:\n{}", part1);
+    println!("part 2:\n{}", part2);
+}
+
+const SAMPLES: &[&str] = &[
+    r"
 addx 15
 addx -11
 addx 6
@@ -197,13 +210,16 @@ addx -11
 noop
 noop
 noop
-"
-        .trim_start()
-    ));
-    let filename = env::args().nth(1).expect("missing filename arg");
-    let contents = fs::read_to_string(filename).expect("opening file failed");
+",
+    r"
+noop
+addx 3
+addx -5
+",
+    r"
 
-    let (part1, part2) = solve(&contents);
-    println!("part 1:\n{}", part1);
-    println!("part 2:\n{}", part2);
-}
+",
+    r"
+
+",
+];
