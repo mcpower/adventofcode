@@ -1,4 +1,4 @@
-use std::{env, fs};
+use std::{env, fmt::Display, fs};
 
 use itertools::Itertools;
 
@@ -40,8 +40,13 @@ fn solve(inp: &str) -> (i64, String) {
     (part1, part2)
 }
 
-fn main() {
-    for sample in SAMPLES
+fn run_samples_and_arg<T, U, F>(solve: F, samples: &[&str])
+where
+    T: Display,
+    U: Display,
+    F: Fn(&str) -> (T, U),
+{
+    for sample in samples
         .iter()
         .map(|s| s.trim_start())
         .filter(|s| !s.is_empty())
@@ -53,6 +58,7 @@ fn main() {
         println!("part 2:\n{}", part2);
         println!();
     }
+
     let filename = env::args().nth(1).expect("missing filename arg");
     let contents = fs::read_to_string(filename).expect("opening file failed");
 
@@ -60,6 +66,10 @@ fn main() {
     let (part1, part2) = solve(&contents);
     println!("part 1:\n{}", part1);
     println!("part 2:\n{}", part2);
+}
+
+fn main() {
+    run_samples_and_arg(solve, SAMPLES);
 }
 
 const SAMPLES: &[&str] = &[
