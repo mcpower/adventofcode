@@ -197,7 +197,6 @@ addx -11
 noop
 noop
 noop
-
 "
         .trim_start()
     ));
