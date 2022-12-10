@@ -1,9 +1,12 @@
 use std::{env, fs};
 
-fn solve(inp: &str) -> (i64, i64) {
-    // at the end of this cycle, x was...
-    let mut history: Vec<i64> = vec![];
+use itertools::Itertools;
+
+fn solve(inp: &str) -> (i64, String) {
     let mut last = 1;
+    // at the END of this 1-indexed (!) cycle, x was...
+    // OR: DURING this 0-indexed cycle, x was...
+    let mut history: Vec<i64> = vec![last];
     for line in inp.lines() {
         if line == "noop" {
             history.push(last);
@@ -17,11 +20,23 @@ fn solve(inp: &str) -> (i64, i64) {
     let part1 = history
         .iter()
         .enumerate()
-        .skip(19)
+        .skip(20)
         .step_by(40)
-        .map(|(i, x)| (TryInto::<i64>::try_into(i).expect("size overflowed i64??") + 1) * x)
+        .map(|(i, x)| (TryInto::<i64>::try_into(i).expect("size overflowed i64??")) * x)
         .sum();
-    let part2 = 0;
+
+    let part2 = history
+        .iter()
+        .enumerate()
+        .map(|(i, x)| {
+            x - 1 <= (TryInto::<i64>::try_into(i).unwrap() % 40)
+                && (TryInto::<i64>::try_into(i).unwrap() % 40) <= x + 1
+        })
+        .map(|x| if x { '#' } else { '.' })
+        .chunks(40)
+        .into_iter()
+        .map(|chunk| chunk.collect::<String>())
+        .join("\n");
     (part1, part2)
 }
 
@@ -190,6 +205,6 @@ noop
     let contents = fs::read_to_string(filename).expect("opening file failed");
 
     let (part1, part2) = solve(&contents);
-    println!("part 1: {}", part1);
-    println!("part 2: {}", part2);
+    println!("part 1:\n{}", part1);
+    println!("part 2:\n{}", part2);
 }
