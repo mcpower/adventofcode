@@ -1,17 +1,19 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 use itertools::Itertools;
 use mcpower_aoc::runner::run_samples_and_arg;
 
+const PART3_OPS: u64 = 1_000_000_000 * 60 * 60 * 24;
+
 #[derive(Debug)]
 enum Operation {
-    Add(i64),
-    Mul(i64),
+    Add(u64),
+    Mul(u64),
     Square,
 }
 
 impl Operation {
-    fn apply(&self, old: i64) -> i64 {
+    fn apply(&self, old: u64) -> u64 {
         match self {
             Operation::Add(x) => old + x,
             Operation::Mul(x) => old * x,
@@ -22,17 +24,17 @@ impl Operation {
 
 #[derive(Debug)]
 struct Monkey {
-    initial_items: Vec<i64>,
+    initial_items: Vec<u64>,
     operation: Operation,
-    test: i64,
-    if_true: usize,
-    if_false: usize,
+    test: u64,
+    if_true: u8,
+    if_false: u8,
 }
 
 impl Monkey {
     /// Returns (new worry level, monkey thrown to).
     /// Does no mutation!
-    fn round_part1(&self, item: i64) -> (i64, usize) {
+    fn round_part1(&self, item: u64) -> (u64, u8) {
         // inspect
         let item = self.operation.apply(item);
         // bored
@@ -45,7 +47,7 @@ impl Monkey {
         (item, recipient)
     }
 
-    fn round_part2(&self, item: i64) -> (i64, usize) {
+    fn round_part2(&self, item: u64) -> (u64, u8) {
         // inspect
         let item = self.operation.apply(item);
         let recipient = if item % self.test == 0 {
@@ -71,7 +73,7 @@ fn solve(inp: &str) -> (usize, usize) {
                 .strip_prefix("  Starting items: ")
                 .expect("unexpected monkey note second line")
                 .split(", ")
-                .map(|item| item.parse::<i64>().expect("unexpected monkey item"))
+                .map(|item| item.parse().expect("unexpected monkey item"))
                 .collect::<Vec<_>>();
             let operation = operation
                 .strip_prefix("  Operation: new = old ")
@@ -95,13 +97,16 @@ fn solve(inp: &str) -> (usize, usize) {
                 .expect("unexpected monkey if true")
                 .parse()
                 .expect("monkey if true wasn't int");
-            assert_ne!(if_true, i, "monkey would throw to itself if true");
+            assert_ne!(if_true as usize, i, "monkey would throw to itself if true");
             let if_false = if_false
                 .strip_prefix("    If false: throw to monkey ")
                 .expect("unexpected monkey if true")
                 .parse()
                 .expect("monkey if true wasn't int");
-            assert_ne!(if_false, i, "monkey would throw to itself if false");
+            assert_ne!(
+                if_false as usize, i,
+                "monkey would throw to itself if false"
+            );
             Monkey {
                 initial_items: items,
                 operation,
@@ -136,13 +141,14 @@ fn solve(inp: &str) -> (usize, usize) {
         ops.iter().rev().take(2).product()
     };
 
+    // use the fact that everything is (co)prime
+    let lcm = monkeys
+        .iter()
+        .map(|monkey| monkey.test)
+        .unique()
+        .product::<u64>();
+
     let part2 = {
-        // use the fact that everything is (co)prime
-        let lcm = monkeys
-            .iter()
-            .map(|monkey| monkey.test)
-            .unique()
-            .product::<i64>();
         let mut monkey_items = monkeys
             .iter()
             .map(|monkey| monkey.initial_items.clone())
@@ -165,6 +171,81 @@ fn solve(inp: &str) -> (usize, usize) {
         ops.sort_unstable();
         ops.iter().rev().take(2).product()
     };
+
+    let part3: u64 = {
+        // Keep track of items and where they hop to.
+        // They should finish within (product of test)s, which is around
+        // 10 million ops.
+        let mut ops = monkeys
+            .iter()
+            .enumerate()
+            .flat_map(|(i, monkey)| monkey.initial_items.iter().map(move |item| (i, item)))
+            .map(|(i, item)| {
+                let mut cur_monkey = i as u8;
+                let mut cur_item = *item as u64;
+                // vec of "what monkeys threw this item during this 0-indexed round"
+                // as a vector of bitsets
+                let mut monkey_history = vec![];
+                let mut history = HashMap::<(u64, u8), usize>::new();
+                let loop_start = loop {
+                    let entry = history.entry((cur_item, cur_monkey));
+                    match entry {
+                        std::collections::hash_map::Entry::Occupied(o) => {
+                            break *o.get();
+                        }
+                        std::collections::hash_map::Entry::Vacant(v) => {
+                            v.insert(monkey_history.len());
+                        }
+                    };
+                    let mut monkey_history_entry = 0u8;
+                    loop {
+                        monkey_history_entry |= 1 << cur_monkey;
+                        let old_cur_monkey = cur_monkey;
+                        (cur_item, cur_monkey) = monkeys[cur_monkey as usize].round_part2(cur_item);
+                        cur_item %= lcm;
+                        if cur_monkey < old_cur_monkey {
+                            break;
+                        }
+                    }
+                    monkey_history.push(monkey_history_entry);
+                };
+                let loop_length = monkey_history.len() - loop_start;
+                let mut loop_ops = vec![0u64; monkeys.len()];
+                for i in &monkey_history[loop_start..] {
+                    for (bit, x) in loop_ops.iter_mut().enumerate() {
+                        *x += ((i >> bit) & 1) as u64;
+                    }
+                }
+                let mut out = vec![0u64; monkeys.len()];
+                let first_part = PART3_OPS.min(loop_start as u64) as usize;
+                let loop_part = PART3_OPS - (first_part as u64);
+                let totals = loop_part / loop_length as u64;
+                let remainder = loop_part % loop_length as u64;
+                for i in &monkey_history[..first_part] {
+                    for (bit, x) in out.iter_mut().enumerate() {
+                        *x += ((i >> bit) & 1) as u64;
+                    }
+                }
+                for (i, x) in loop_ops.iter().enumerate() {
+                    out[i] += *x * totals;
+                }
+                for i in &monkey_history[loop_start..][..remainder as usize] {
+                    for (bit, x) in out.iter_mut().enumerate() {
+                        *x += ((i >> bit) & 1) as u64;
+                    }
+                }
+                out
+            })
+            .fold(vec![0u64; monkeys.len()], |a, b| {
+                a.into_iter()
+                    .zip(b.into_iter())
+                    .map(|(x, y)| x + y)
+                    .collect()
+            });
+        ops.sort_unstable();
+        ops.iter().rev().take(2).sum()
+    };
+    dbg!(part3);
 
     (part1, part2)
 }
