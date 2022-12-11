@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use itertools::Itertools;
 use mcpower_aoc::runner::run_samples_and_arg;
 
@@ -30,7 +32,7 @@ struct Monkey {
 impl Monkey {
     /// Returns (new worry level, monkey thrown to).
     /// Does no mutation!
-    fn round(&self, item: i64) -> (i64, usize) {
+    fn round_part1(&self, item: i64) -> (i64, usize) {
         // inspect
         let item = self.operation.apply(item);
         // bored
@@ -42,9 +44,20 @@ impl Monkey {
         };
         (item, recipient)
     }
+
+    fn round_part2(&self, item: i64) -> (i64, usize) {
+        // inspect
+        let item = self.operation.apply(item);
+        let recipient = if item % self.test == 0 {
+            self.if_true
+        } else {
+            self.if_false
+        };
+        (item, recipient)
+    }
 }
 
-fn solve(inp: &str) -> (usize, i64) {
+fn solve(inp: &str) -> (usize, usize) {
     let monkeys = inp
         .split_terminator("\n\n")
         .enumerate()
@@ -110,7 +123,7 @@ fn solve(inp: &str) -> (usize, i64) {
                 // need to collect for borrow checker I think
                 let new = monkey_items[i]
                     .iter()
-                    .map(|item| monkey.round(*item))
+                    .map(|item| monkey.round_part1(*item))
                     .collect::<Vec<_>>();
                 for (new_worry, new_recepient) in new.iter() {
                     monkey_items[*new_recepient as usize].push(*new_worry);
@@ -123,7 +136,35 @@ fn solve(inp: &str) -> (usize, i64) {
         ops.iter().rev().take(2).product()
     };
 
-    let part2 = 0;
+    let part2 = {
+        // use the fact that everything is (co)prime
+        let lcm = monkeys
+            .iter()
+            .map(|monkey| monkey.test)
+            .unique()
+            .product::<i64>();
+        let mut monkey_items = monkeys
+            .iter()
+            .map(|monkey| monkey.initial_items.clone())
+            .collect::<Vec<_>>();
+        let mut ops = monkeys.iter().map(|_| 0).collect::<Vec<_>>();
+        for _round in 1..=10000 {
+            for (i, monkey) in monkeys.iter().enumerate() {
+                // need to collect for borrow checker I think
+                let new = monkey_items[i]
+                    .iter()
+                    .map(|item| monkey.round_part2(*item))
+                    .collect::<Vec<_>>();
+                for (new_worry, new_recepient) in new.iter() {
+                    monkey_items[*new_recepient as usize].push(*new_worry % lcm);
+                }
+                monkey_items[i].clear();
+                ops[i] += new.len();
+            }
+        }
+        ops.sort_unstable();
+        ops.iter().rev().take(2).product()
+    };
 
     (part1, part2)
 }
