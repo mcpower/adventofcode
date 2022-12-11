@@ -122,7 +122,7 @@ fn solve(inp: &str) -> (usize, usize) {
             .iter()
             .map(|monkey| monkey.initial_items.clone())
             .collect::<Vec<_>>();
-        let mut ops = monkeys.iter().map(|_| 0).collect::<Vec<_>>();
+        let mut ops = vec![0; monkeys.len()];
         for _round in 1..=20 {
             for (i, monkey) in monkeys.iter().enumerate() {
                 // need to collect for borrow checker I think
@@ -153,7 +153,7 @@ fn solve(inp: &str) -> (usize, usize) {
             .iter()
             .map(|monkey| monkey.initial_items.clone())
             .collect::<Vec<_>>();
-        let mut ops = monkeys.iter().map(|_| 0).collect::<Vec<_>>();
+        let mut ops = vec![0; monkeys.len()];
         for _round in 1..=10000 {
             for (i, monkey) in monkeys.iter().enumerate() {
                 // need to collect for borrow checker I think

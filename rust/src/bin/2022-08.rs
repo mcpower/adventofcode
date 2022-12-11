@@ -11,10 +11,7 @@ fn solve(inp: &str) -> (i64, i64) {
         .collect::<Vec<_>>();
     let rows = grid.len();
     let cols = grid.first().expect("empty grid?").len();
-    let mut visible: Vec<Vec<bool>> = grid
-        .iter()
-        .map(|row| row.iter().map(|_| false).collect())
-        .collect();
+    let mut visible: Vec<Vec<bool>> = grid.iter().map(|row| vec![false; row.len()]).collect();
 
     for (i, row) in grid.iter().enumerate() {
         // front to back
