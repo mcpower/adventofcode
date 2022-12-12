@@ -88,7 +88,51 @@ fn solve(inp: &str) -> (i64, i64) {
         distances[end_row][end_col].expect("didn't hit the end?")
     };
 
-    let part2 = 0;
+    let expand_part2 = |(row, col): (usize, usize)| {
+        let cur_elevation = elevations[row][col];
+        DELTA_4.iter().filter_map(move |(drow, dcol)| {
+            let new_row = (TryInto::<i64>::try_into(row).ok()? + *drow) as usize;
+            let new_col = (TryInto::<i64>::try_into(col).ok()? + *dcol) as usize;
+            let elevation = *elevations_ref.get(new_row)?.get(new_col)?;
+            if cur_elevation <= elevation + 1 {
+                Some((new_row, new_col))
+            } else {
+                None
+            }
+        })
+    };
+
+    let part2 = {
+        let mut queue = VecDeque::new();
+        // TODO: use once_cell? lol
+        let mut distances: Vec<Vec<Option<i64>>> =
+            elevations.iter().map(|row| vec![None; row.len()]).collect();
+        queue.push_back(end);
+        let (end_row, end_col) = end;
+        distances[end_row][end_col] = Some(0);
+        let mut ans = None;
+        while let Some(popped) = queue.pop_front() {
+            let (popped_row, popped_col) = popped;
+            let elevation = elevations[popped_row][popped_col];
+            let cur_dist = distances[popped_row][popped_col].unwrap();
+            if elevation == 0 {
+                ans = Some(cur_dist);
+                break;
+            }
+            let new_dist = cur_dist + 1;
+            for successor in expand_part2(popped) {
+                let (successor_row, successor_col) = successor;
+                if let Some(existing) = distances[successor_row][successor_col] {
+                    if existing <= new_dist {
+                        continue;
+                    }
+                }
+                distances[successor_row][successor_col] = Some(new_dist);
+                queue.push_back(successor);
+            }
+        }
+        ans.expect("didn't hit the end?")
+    };
 
     (part1, part2)
 }
