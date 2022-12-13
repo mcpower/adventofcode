@@ -11,7 +11,7 @@ enum Packet {
 
 impl PartialEq for Packet {
     fn eq(&self, other: &Self) -> bool {
-        compare(self, other).is_eq()
+        self.cmp(other).is_eq()
     }
 }
 
@@ -19,13 +19,7 @@ impl Eq for Packet {}
 
 impl PartialOrd for Packet {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(compare(self, other))
-    }
-}
-
-impl Ord for Packet {
-    fn cmp(&self, other: &Self) -> Ordering {
-        compare(self, other)
+        Some(self.cmp(other))
     }
 }
 
@@ -35,24 +29,26 @@ where
     U: Iterator<Item = &'a Packet>,
 {
     left.zip(right)
-        .map(|(x, y)| compare(x, y))
+        .map(|(x, y)| x.cmp(y))
         .find(|c| *c != Ordering::Equal)
 }
 
-fn compare(left: &Packet, right: &Packet) -> Ordering {
-    match (left, right) {
-        (Packet::Integer(a), Packet::Integer(b)) => a.cmp(b),
-        (a @ Packet::Integer(_), Packet::List(b)) => {
-            match compare_iterable(Some(a).into_iter(), b.iter()) {
-                Some(o) => o,
-                None => 1.cmp(&b.len()),
+impl Ord for Packet {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self, other) {
+            (Packet::Integer(a), Packet::Integer(b)) => a.cmp(b),
+            (a @ Packet::Integer(_), Packet::List(b)) => {
+                match compare_iterable(Some(a).into_iter(), b.iter()) {
+                    Some(o) => o,
+                    None => 1.cmp(&b.len()),
+                }
             }
+            (a @ Packet::List(_), b @ Packet::Integer(_)) => b.cmp(a).reverse(),
+            (Packet::List(a), Packet::List(b)) => match compare_iterable(a.iter(), b.iter()) {
+                Some(o) => o,
+                None => a.len().cmp(&b.len()),
+            },
         }
-        (a @ Packet::List(_), b @ Packet::Integer(_)) => compare(b, a).reverse(),
-        (Packet::List(a), Packet::List(b)) => match compare_iterable(a.iter(), b.iter()) {
-            Some(o) => o,
-            None => a.len().cmp(&b.len()),
-        },
     }
 }
 
