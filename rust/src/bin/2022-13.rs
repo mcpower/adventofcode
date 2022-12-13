@@ -9,6 +9,26 @@ enum Packet {
     List(Vec<Packet>),
 }
 
+impl PartialEq for Packet {
+    fn eq(&self, other: &Self) -> bool {
+        compare(self, other).is_eq()
+    }
+}
+
+impl Eq for Packet {}
+
+impl PartialOrd for Packet {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(compare(self, other))
+    }
+}
+
+impl Ord for Packet {
+    fn cmp(&self, other: &Self) -> Ordering {
+        compare(self, other)
+    }
+}
+
 fn compare_iterable<'a, T, U>(left: T, right: U) -> Option<Ordering>
 where
     T: Iterator<Item = &'a Packet>,
@@ -94,7 +114,7 @@ fn parse(line: &str) -> Packet {
     parsed
 }
 
-fn solve(inp: &str) -> (usize, i64) {
+fn solve(inp: &str) -> (usize, usize) {
     let pairs = inp
         .split_terminator("\n\n")
         .map(|pair| {
@@ -107,11 +127,22 @@ fn solve(inp: &str) -> (usize, i64) {
     let part1 = pairs
         .iter()
         .enumerate()
-        .filter(|(_i, (a, b))| compare(a, b) == Ordering::Less)
+        .filter(|(_i, (a, b))| a < b)
         .map(|(i, _pair)| i + 1)
         .sum();
 
-    let part2 = 0;
+    let divider_1 = Packet::List(vec![Packet::List(vec![Packet::Integer(2)])]);
+    let divider_2 = Packet::List(vec![Packet::List(vec![Packet::Integer(6)])]);
+
+    let part2 = pairs
+        .iter()
+        .flat_map(|(a, b)| [a, b])
+        .chain([&divider_1, &divider_2])
+        .sorted()
+        .enumerate()
+        .filter(|(_i, packet)| **packet == divider_1 || **packet == divider_2)
+        .map(|(i, _packet)| i + 1)
+        .product();
 
     (part1, part2)
 }
