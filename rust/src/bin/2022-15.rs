@@ -15,8 +15,11 @@ impl Range {
     }
 }
 
+const TUNING_X_MUL: i64 = 4000000;
+
 fn solve(inp: &str, is_sample: bool) -> (i64, i64) {
-    let target_row = if is_sample { 10 } else { 2000000 };
+    let part1_target_row = if is_sample { 10 } else { 2000000 };
+    let part2_range = if is_sample { 20 } else { 4000000 };
     let sensors_beacons: Vec<(Vec2, Vec2)> = inp
         .lines()
         .map(|line| {
@@ -53,14 +56,14 @@ fn solve(inp: &str, is_sample: bool) -> (i64, i64) {
             .filter_map(|(sensor, beacon)| {
                 // [from, to)
                 let dist = (*beacon - *sensor).norm_1();
-                let dist_on_target_row = dist - (sensor.1 - target_row).abs();
+                let dist_on_target_row = dist - (sensor.1 - part1_target_row).abs();
                 if dist_on_target_row < 0 {
                     None
                 } else {
-                    Some(dbg!(Range::new(
+                    Some(Range::new(
                         sensor.0 - dist_on_target_row,
                         sensor.0 + dist_on_target_row + 1,
-                    )))
+                    ))
                 }
             })
             .sorted();
@@ -83,7 +86,7 @@ fn solve(inp: &str, is_sample: bool) -> (i64, i64) {
         let beacons = sensors_beacons
             .iter()
             .map(|(_sensor, beacon)| beacon)
-            .filter(|beacon| beacon.1 == target_row)
+            .filter(|beacon| beacon.1 == part1_target_row)
             .map(|beacon| beacon.0)
             .unique()
             .count();
@@ -91,7 +94,42 @@ fn solve(inp: &str, is_sample: bool) -> (i64, i64) {
         visible - (beacons as i64)
     };
 
-    let part2 = 0;
+    let part2 = 'part2: {
+        for y in 0..=part2_range {
+            let mut ranges = sensors_beacons
+                .iter()
+                .filter_map(|(sensor, beacon)| {
+                    // [from, to)
+                    let dist = (*beacon - *sensor).norm_1();
+                    let dist_on_target_row = dist - (sensor.1 - y).abs();
+                    if dist_on_target_row < 0 {
+                        None
+                    } else {
+                        Some(Range::new(
+                            (sensor.0 - dist_on_target_row).max(0),
+                            (sensor.0 + dist_on_target_row + 1).min(part2_range + 1),
+                        ))
+                    }
+                })
+                .sorted();
+
+            let mut cur_range = ranges.next().expect("found no range for whole row");
+            if cur_range.start != 0 {
+                assert_eq!(cur_range.start, 1);
+                break 'part2 y;
+            }
+
+            for range in ranges {
+                if range.start > cur_range.end {
+                    assert_eq!(cur_range.end + 1, range.start);
+                    break 'part2 cur_range.end * TUNING_X_MUL + y;
+                } else {
+                    cur_range.end = range.end.max(cur_range.end);
+                }
+            }
+        }
+        unreachable!("couldn't find missing point")
+    };
 
     (part1, part2)
 }
