@@ -56,7 +56,7 @@ pub fn run_samples_and_arg<T, U, F>(solve: F, samples: &[&str])
 where
     T: Display,
     U: Display,
-    F: Fn(&str) -> (T, U),
+    F: Fn(&str, bool) -> (T, U),
 {
     for sample in samples
         .iter()
@@ -65,7 +65,7 @@ where
     {
         println!("=== SAMPLE ===");
         println!("input: {:?}", &sample[..20]);
-        let (part1, part2) = solve(sample);
+        let (part1, part2) = solve(sample, true);
         println!("part 1:\n{}", part1);
         println!("part 2:\n{}", part2);
         println!();
@@ -75,7 +75,7 @@ where
     let contents = fs::read_to_string(filename).expect("opening file failed");
 
     println!("=== ACTUAL ===");
-    let (part1, part2) = solve(&contents);
+    let (part1, part2) = solve(&contents, false);
     println!("part 1:\n{}", part1);
     println!("part 2:\n{}", part2);
 }

@@ -9,7 +9,7 @@ enum NonAir {
     Sand,
 }
 
-fn solve(inp: &str) -> (i64, i64) {
+fn solve(inp: &str, _is_sample: bool) -> (i64, i64) {
     let rock: Vec<Vec<(i64, i64)>> = inp
         .lines()
         .map(|line| {

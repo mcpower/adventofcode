@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use mcpower_aoc::runner::run_samples_and_arg;
 
-fn solve(inp: &str) -> (i64, String) {
+fn solve(inp: &str, _is_sample: bool) -> (i64, String) {
     let mut last = 1;
     // at the END of this 1-indexed (!) cycle, x was...
     // OR: DURING this 0-indexed cycle, x was...

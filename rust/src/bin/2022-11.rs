@@ -59,7 +59,7 @@ impl Monkey {
     }
 }
 
-fn solve(inp: &str) -> (usize, usize) {
+fn solve(inp: &str, _is_sample: bool) -> (usize, usize) {
     let monkeys = inp
         .split_terminator("\n\n")
         .enumerate()

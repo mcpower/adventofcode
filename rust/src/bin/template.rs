@@ -1,6 +1,6 @@
 use mcpower_aoc::runner::run_samples_and_arg;
 
-fn solve(inp: &str) -> (i64, i64) {
+fn solve(inp: &str, _is_sample: bool) -> (i64, i64) {
     let part1 = 0;
 
     let part2 = 0;

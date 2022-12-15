@@ -110,7 +110,7 @@ fn parse(line: &str) -> Packet {
     parsed
 }
 
-fn solve(inp: &str) -> (usize, usize) {
+fn solve(inp: &str, _is_sample: bool) -> (usize, usize) {
     let pairs = inp
         .split_terminator("\n\n")
         .map(|pair| {

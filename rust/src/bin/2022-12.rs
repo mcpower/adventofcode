@@ -5,7 +5,7 @@ use mcpower_aoc::runner::run_samples_and_arg;
 
 const DELTA_4: &[(i64, i64)] = &[(-1, 0), (0, 1), (1, 0), (0, -1)];
 
-fn solve(inp: &str) -> (i64, i64) {
+fn solve(inp: &str, _is_sample: bool) -> (i64, i64) {
     let grid: Vec<Vec<char>> = inp.lines().map(|line| line.chars().collect()).collect();
 
     let start = grid
