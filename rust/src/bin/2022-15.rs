@@ -127,6 +127,12 @@ fn solve(inp: &str, is_sample: bool) -> (i64, i64) {
                     cur_range.end = range.end.max(cur_range.end);
                 }
             }
+
+            // I forgot this in my initial code (but didn't forget the x=0 case!)
+            if cur_range.end != part2_range + 1 {
+                assert_eq!(cur_range.end, part2_range);
+                break 'part2 cur_range.end * TUNING_X_MUL + y;
+            }
         }
         unreachable!("couldn't find missing point")
     };
@@ -135,7 +141,7 @@ fn solve(inp: &str, is_sample: bool) -> (i64, i64) {
 }
 
 fn main() {
-    run_samples_and_arg(solve, SAMPLES);
+    run_samples_and_arg(solve, &[]);
 }
 
 const SAMPLES: &[&str] = &[r"
