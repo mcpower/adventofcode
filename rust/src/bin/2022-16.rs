@@ -7,7 +7,7 @@ use itertools::Itertools;
 use mcpower_aoc::runner::run_samples_and_arg;
 use regex::Regex;
 
-fn solve(inp: &str, _is_sample: bool) -> (u64, i64) {
+fn solve(inp: &str, _is_sample: bool) -> (u64, u64) {
     let re =
         Regex::new(r"^Valve (\w+) has flow rate=(\d+); tunnels? leads? to valves? (.+)$").unwrap();
     let valves: HashMap<&str, (u64, Vec<&str>)> = inp
@@ -66,12 +66,12 @@ fn solve(inp: &str, _is_sample: bool) -> (u64, i64) {
     // the better way of doing this is to only consider non-zero flow rate
     // valves, but whatever
     // (time left, valves_open, cur_node): pressure lost
-    type SearchNode = (u8, u64, u8);
+    type SearchNodePart1 = (u8, u64, u8);
 
     let part1 = {
-        let mut pq = BinaryHeap::<Reverse<(u64, SearchNode)>>::new();
-        let mut best = HashMap::<SearchNode, u64>::new();
-        let start_node: SearchNode = (30, 0, start_i);
+        let mut pq = BinaryHeap::<Reverse<(u64, SearchNodePart1)>>::new();
+        let mut best = HashMap::<SearchNodePart1, u64>::new();
+        let start_node: SearchNodePart1 = (30, 0, start_i);
         best.insert(start_node, 0);
         pq.push(Reverse((0, start_node)));
 
@@ -126,7 +126,105 @@ fn solve(inp: &str, _is_sample: bool) -> (u64, i64) {
         30 * pressure_per_time - best_dist
     };
 
-    let part2 = 0;
+    type SearchNodePart2 = (u8, u64, u8, u8);
+    let part2 = {
+        let mut pq = BinaryHeap::<Reverse<(u64, SearchNodePart2)>>::new();
+        let mut best = HashMap::<SearchNodePart2, u64>::new();
+        let start_node: SearchNodePart2 = (26, 0, start_i, start_i);
+        best.insert(start_node, 0);
+        pq.push(Reverse((0, start_node)));
+
+        let best_dist = loop {
+            let Some(Reverse((dist, node @ (time_left, valves_open, cur_node, cur_node_2)))) = pq.pop() else { unreachable!("didn't reach end") };
+            {
+                let best_dist = *best.get(&node).expect("popped off node not in best??");
+                if best_dist < dist {
+                    continue;
+                }
+                assert_eq!(best_dist, dist, "popped off dist isn't best dist??");
+            }
+            if node.0 == 0 {
+                break dist;
+            }
+            let pressure_lost = *valves_open_to_pressure_lost.get(&valves_open).unwrap();
+            let adj = {
+                valves_better
+                    .get(cur_node as usize)
+                    .unwrap()
+                    .1
+                    .iter()
+                    .map(move |other| (0, *other))
+                    .chain(
+                        ((valves_open >> cur_node) & 1 == 0)
+                            .then(|| {
+                                let cur_rate = valves_better[cur_node as usize].0;
+                                if cur_rate == 0 {
+                                    return None;
+                                }
+                                let bit = 1 << cur_node;
+                                let new_valves_open = valves_open | bit;
+                                valves_open_to_pressure_lost
+                                    .entry(new_valves_open)
+                                    .or_insert_with(|| pressure_lost - cur_rate);
+                                Some((bit, cur_node))
+                            })
+                            .flatten(),
+                    )
+                    .cartesian_product(
+                        valves_better
+                            .get(cur_node_2 as usize)
+                            .unwrap()
+                            .1
+                            .iter()
+                            .map(move |other| (0, *other))
+                            .chain(
+                                ((valves_open >> cur_node_2) & 1 == 0)
+                                    .then(|| {
+                                        let cur_rate = valves_better[cur_node_2 as usize].0;
+                                        if cur_rate == 0 {
+                                            return None;
+                                        }
+                                        let bit = 1 << cur_node_2;
+                                        let new_valves_open = valves_open | bit;
+                                        valves_open_to_pressure_lost
+                                            .entry(new_valves_open)
+                                            .or_insert_with(|| pressure_lost - cur_rate);
+                                        Some((bit, cur_node_2))
+                                    })
+                                    .flatten(),
+                            ),
+                    )
+                    .map(|((bit_1, node_1), (bit_2, node_2))| {
+                        if bit_1 != 0 && bit_2 != 0 {
+                            let new_valves_open = valves_open | bit_1 | bit_2;
+                            valves_open_to_pressure_lost
+                                .entry(new_valves_open)
+                                .or_insert_with(|| {
+                                    pressure_lost
+                                        - valves_better[node_1 as usize].0
+                                        - valves_better[node_2 as usize].0
+                                });
+                        }
+                        (
+                            (time_left - 1, valves_open | bit_1 | bit_2, node_1, node_2),
+                            pressure_lost,
+                        )
+                    })
+            };
+            for (other_node, weight) in adj {
+                let new_dist = dist + weight;
+                if let Some(cur_best) = best.get(&other_node) {
+                    if *cur_best <= new_dist {
+                        continue;
+                    }
+                }
+                best.insert(other_node, new_dist);
+                pq.push(Reverse((new_dist, other_node)));
+            }
+        };
+
+        26 * pressure_per_time - best_dist
+    };
 
     (part1, part2)
 }
