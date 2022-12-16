@@ -141,7 +141,7 @@ fn solve(inp: &str, is_sample: bool) -> (i64, i64) {
 }
 
 fn main() {
-    run_samples_and_arg(solve, &[]);
+    run_samples_and_arg(solve, SAMPLES);
 }
 
 const SAMPLES: &[&str] = &[r"
