@@ -81,178 +81,104 @@ fn solve(inp: &str, _is_sample: bool) -> (usize, usize) {
             )
         })
         .collect::<Vec<_>>();
-    let part1 = {
-        let mut board: Vec<[bool; BOARD_WIDTH]> = vec![];
-        let mut cur_rock_i: usize = 0;
-        let mut cur_rock = rocks[cur_rock_i % rocks.len()].clone();
-        for delta in deltas.iter().cycle() {
-            if cur_rock_i == 2022 {
+
+    let mut board: Vec<[bool; BOARD_WIDTH]> = vec![];
+    let mut cur_rock_i: usize = 0;
+    let mut cur_rock = rocks[cur_rock_i % rocks.len()].clone();
+    let mut heights: Vec<usize> = vec![0];
+    // map of (delta index, next_rock_i % rocks): vec[next_rock_i]
+    let mut cycle_map = HashMap::<(usize, usize), Vec<usize>>::new();
+
+    let mut interesting_cycle_map_key = (0, 0);
+    for (delta_index, delta) in deltas.iter().enumerate().cycle() {
+        // left/right
+        let new_rock = cur_rock.iter().map(|pos| *pos + *delta).collect::<Vec<_>>();
+        if new_rock.iter().all(|Vec2(row, col)| {
+            let row = *row;
+            let col = *col;
+            // "is good
+            if !(0 <= col && col < BOARD_WIDTH as i64) {
+                return false;
+            }
+            if row >= 0 {
+                let row = row as usize;
+                if row > board.len() {
+                    // went beneath the board
+                    return false;
+                }
+                if board[board.len() - 1 - row][col as usize] {
+                    // collided into something
+                    return false;
+                }
+            }
+            true
+        }) {
+            cur_rock = new_rock;
+        }
+
+        let new_rock = cur_rock
+            .iter()
+            .map(|pos| *pos + Vec2(1, 0))
+            .collect::<Vec<_>>();
+        if new_rock.iter().all(|Vec2(row, col)| {
+            let row = *row;
+            let col = *col;
+            // "is good
+            if !(0 <= col && col < BOARD_WIDTH as i64) {
+                return false;
+            }
+            if row >= 0 {
+                let row = row as usize;
+                if row >= board.len() {
+                    // went beneath the board
+                    return false;
+                }
+                if board[board.len() - 1 - row][col as usize] {
+                    // collided into something
+                    return false;
+                }
+            }
+            true
+        }) {
+            cur_rock = new_rock;
+        } else {
+            // commit
+            let zero_board_i = board.len() as i64 - 1;
+            for Vec2(row, col) in cur_rock {
+                let board_i = usize::try_from(zero_board_i - row)
+                    .expect("attempted to commit to negative board row");
+                if board_i >= board.len() {
+                    board.resize(board_i + 1, [false; 7]);
+                }
+                board[board_i][col as usize] = true;
+            }
+            heights.push(board.len());
+            cur_rock_i += 1;
+            let cur_rock_mod_rocks = cur_rock_i % rocks.len();
+            cur_rock = rocks[cur_rock_mod_rocks].clone();
+
+            let key = (delta_index, cur_rock_mod_rocks);
+            let cur_thing = cycle_map.entry(key).or_default();
+            cur_thing.push(cur_rock_i);
+            if cur_thing.len() >= 4 {
+                interesting_cycle_map_key = key;
                 break;
             }
-            // left/right
-            let new_rock = cur_rock.iter().map(|pos| *pos + *delta).collect::<Vec<_>>();
-            if new_rock.iter().all(|Vec2(row, col)| {
-                let row = *row;
-                let col = *col;
-                // "is good
-                if !(0 <= col && col < BOARD_WIDTH as i64) {
-                    return false;
-                }
-                if row >= 0 {
-                    let row = row as usize;
-                    if row > board.len() {
-                        // went beneath the board
-                        return false;
-                    }
-                    if board[board.len() - 1 - row][col as usize] {
-                        // collided into something
-                        return false;
-                    }
-                }
-                true
-            }) {
-                cur_rock = new_rock;
-            }
-
-            let new_rock = cur_rock
-                .iter()
-                .map(|pos| *pos + Vec2(1, 0))
-                .collect::<Vec<_>>();
-            if new_rock.iter().all(|Vec2(row, col)| {
-                let row = *row;
-                let col = *col;
-                // "is good
-                if !(0 <= col && col < BOARD_WIDTH as i64) {
-                    return false;
-                }
-                if row >= 0 {
-                    let row = row as usize;
-                    if row >= board.len() {
-                        // went beneath the board
-                        return false;
-                    }
-                    if board[board.len() - 1 - row][col as usize] {
-                        // collided into something
-                        return false;
-                    }
-                }
-                true
-            }) {
-                cur_rock = new_rock;
-            } else {
-                // commit
-                let zero_board_i = board.len() as i64 - 1;
-                for Vec2(row, col) in cur_rock {
-                    let board_i = usize::try_from(zero_board_i - row)
-                        .expect("attempted to commit to negative board row");
-                    if board_i >= board.len() {
-                        board.resize(board_i + 1, [false; 7]);
-                    }
-                    board[board_i][col as usize] = true;
-                }
-                cur_rock_i += 1;
-                cur_rock = rocks[cur_rock_i % rocks.len()].clone();
-            }
         }
-        board.len()
-    };
+    }
+    let interesting_cycle = &cycle_map[&interesting_cycle_map_key];
+    let last_heights_i = interesting_cycle[interesting_cycle.len() - 1];
+    let second_last_heights_i = interesting_cycle[interesting_cycle.len() - 2];
 
-    let part2 = {
-        let mut board: Vec<[bool; BOARD_WIDTH]> = vec![];
-        let mut cur_rock_i: usize = 0;
-        let mut cur_rock = rocks[cur_rock_i % rocks.len()].clone();
-        let mut heights: Vec<usize> = vec![0];
-        // map of (delta index, next_rock_i % rocks): vec[next_rock_i]
-        let mut cycle_map = HashMap::<(usize, usize), Vec<usize>>::new();
-
-        let mut interesting_cycle_map_key = (0, 0);
-        for (delta_index, delta) in deltas.iter().enumerate().cycle() {
-            // left/right
-            let new_rock = cur_rock.iter().map(|pos| *pos + *delta).collect::<Vec<_>>();
-            if new_rock.iter().all(|Vec2(row, col)| {
-                let row = *row;
-                let col = *col;
-                // "is good
-                if !(0 <= col && col < BOARD_WIDTH as i64) {
-                    return false;
-                }
-                if row >= 0 {
-                    let row = row as usize;
-                    if row > board.len() {
-                        // went beneath the board
-                        return false;
-                    }
-                    if board[board.len() - 1 - row][col as usize] {
-                        // collided into something
-                        return false;
-                    }
-                }
-                true
-            }) {
-                cur_rock = new_rock;
-            }
-
-            let new_rock = cur_rock
-                .iter()
-                .map(|pos| *pos + Vec2(1, 0))
-                .collect::<Vec<_>>();
-            if new_rock.iter().all(|Vec2(row, col)| {
-                let row = *row;
-                let col = *col;
-                // "is good
-                if !(0 <= col && col < BOARD_WIDTH as i64) {
-                    return false;
-                }
-                if row >= 0 {
-                    let row = row as usize;
-                    if row >= board.len() {
-                        // went beneath the board
-                        return false;
-                    }
-                    if board[board.len() - 1 - row][col as usize] {
-                        // collided into something
-                        return false;
-                    }
-                }
-                true
-            }) {
-                cur_rock = new_rock;
-            } else {
-                // commit
-                let zero_board_i = board.len() as i64 - 1;
-                for Vec2(row, col) in cur_rock {
-                    let board_i = usize::try_from(zero_board_i - row)
-                        .expect("attempted to commit to negative board row");
-                    if board_i >= board.len() {
-                        board.resize(board_i + 1, [false; 7]);
-                    }
-                    board[board_i][col as usize] = true;
-                }
-                heights.push(board.len());
-                cur_rock_i += 1;
-                let cur_rock_mod_rocks = cur_rock_i % rocks.len();
-                cur_rock = rocks[cur_rock_mod_rocks].clone();
-
-                let key = (delta_index, cur_rock_mod_rocks);
-                let cur_thing = cycle_map.entry(key).or_default();
-                cur_thing.push(cur_rock_i);
-                if cur_thing.len() >= 4 {
-                    interesting_cycle_map_key = key;
-                    break;
-                }
-            }
-        }
-        let interesting_cycle = &cycle_map[&interesting_cycle_map_key];
-        let last_heights_i = interesting_cycle[interesting_cycle.len() - 1];
-        let second_last_heights_i = interesting_cycle[interesting_cycle.len() - 2];
-        if last_heights_i >= PART_2_ITER {
-            heights[PART_2_ITER]
+    let get_ans = |iter: usize| {
+        if last_heights_i >= iter {
+            heights[iter]
         } else {
             let piece_delta = last_heights_i - second_last_heights_i;
             let height_delta = heights[last_heights_i] - heights[second_last_heights_i];
             let piece_start = second_last_heights_i;
 
-            let index_within_cycle = PART_2_ITER - piece_start;
+            let index_within_cycle = iter - piece_start;
             let cycle_start_height = heights[second_last_heights_i];
             let cycles = index_within_cycle / piece_delta;
             let cycle_remaining = index_within_cycle % piece_delta;
@@ -262,6 +188,9 @@ fn solve(inp: &str, _is_sample: bool) -> (usize, usize) {
             cycle_start_height + height_delta * cycles + height_delta_remaining
         }
     };
+
+    let part1 = get_ans(2022);
+    let part2 = get_ans(PART_2_ITER);
 
     (part1, part2)
 }
