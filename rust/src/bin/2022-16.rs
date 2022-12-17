@@ -1,6 +1,9 @@
+// Dijkstra over interesting nodes using Floyd-Warshall. Takes 2 seconds for
+// part 2 on my input in release mode.
+
 use std::{
     cmp::Reverse,
-    collections::{BinaryHeap, HashMap},
+    collections::{BTreeSet, BinaryHeap, HashMap},
 };
 
 use itertools::Itertools;
@@ -8,6 +11,7 @@ use mcpower_aoc::runner::run_samples_and_arg;
 use regex::Regex;
 
 fn solve(inp: &str, _is_sample: bool) -> (u64, u64) {
+    // Input 1: Labels
     let re =
         Regex::new(r"^Valve (\w+) has flow rate=(\d+); tunnels? leads? to valves? (.+)$").unwrap();
     let valves: HashMap<&str, (u64, Vec<&str>)> = inp
@@ -29,18 +33,15 @@ fn solve(inp: &str, _is_sample: bool) -> (u64, u64) {
             )
         })
         .collect();
-    let i_to_valve = valves
+
+    // Input 2: Indices (u8s)
+    let valve_to_i: HashMap<&str, u8> = valves
         .keys()
         .cloned()
         .enumerate()
-        .map(|(i, k)| (i as u8, k))
-        .collect::<HashMap<_, _>>();
-    let valve_to_i = i_to_valve
-        .iter()
-        .map(|(i, k)| (*k, *i))
-        .collect::<HashMap<_, _>>();
-
-    let valves_better = valves
+        .map(|(i, k)| (k, i.try_into().expect("index can't fit in u8")))
+        .collect();
+    let valves = valves
         .into_iter()
         .map(|(k, (flow, tunnels))| {
             (
@@ -59,12 +60,66 @@ fn solve(inp: &str, _is_sample: bool) -> (u64, u64) {
         .collect::<Vec<_>>();
     let start_i = *valve_to_i.get("AA").expect("no AA");
 
-    let pressure_per_time = valves_better.iter().map(|(i, _)| *i).sum::<u64>();
+    // Input 3: APSP for all nodes
+    let flows = valves.iter().map(|(flow, _)| *flow).collect::<Vec<_>>();
+    let n = valves.len();
+    let mut dist_matrix = vec![vec![n * 2; n]; n];
+    #[allow(clippy::needless_range_loop)]
+    for v in 0..n {
+        dist_matrix[v][v] = 0;
+    }
+    for (i, (_, adj)) in valves.iter().enumerate() {
+        for j in adj {
+            dist_matrix[i][usize::from(*j)] = 1;
+        }
+    }
+    for k in 0..n {
+        for i in 0..n {
+            for j in 0..n {
+                if dist_matrix[i][j] > dist_matrix[i][k] + dist_matrix[k][j] {
+                    dist_matrix[i][j] = dist_matrix[i][k] + dist_matrix[k][j];
+                }
+            }
+        }
+    }
+
+    // Input 4: APSP for interesting nodes
+    let mut interesting_nodes = BTreeSet::<u8>::new();
+    interesting_nodes.insert(start_i);
+    for (i, flow) in flows.iter().enumerate() {
+        if *flow > 0 {
+            interesting_nodes.insert(i.try_into().expect("index can't fit in u8"));
+        }
+    }
+    let flows = interesting_nodes
+        .iter()
+        .map(|i| flows[usize::from(*i)])
+        .collect::<Vec<_>>();
+    let dist_matrix: Vec<Vec<_>> = interesting_nodes
+        .iter()
+        .map(|i| {
+            let row = &dist_matrix[usize::from(*i)];
+            interesting_nodes
+                .iter()
+                .map(|j| row[usize::from(*j)])
+                .collect()
+        })
+        .collect();
+    let start_i = u8::try_from(
+        interesting_nodes
+            .iter()
+            .find_position(|&&i| i == start_i)
+            .unwrap()
+            .0,
+    )
+    .expect("index can't fit in u8");
+
+    assert_eq!(flows[usize::from(start_i)], 0, "start flow wasn't 0");
+
+    let pressure_per_time = flows.iter().sum::<u64>();
     let mut valves_open_to_pressure_lost = HashMap::<u64, u64>::new();
     valves_open_to_pressure_lost.insert(0, pressure_per_time);
 
-    // the better way of doing this is to only consider non-zero flow rate
-    // valves, but whatever
     // (time left, valves_open, cur_node): pressure lost
     type SearchNodePart1 = (u8, u64, u8);
 
@@ -76,43 +131,44 @@ fn solve(inp: &str, _is_sample: bool) -> (u64, u64) {
         pq.push(Reverse((0, start_node)));
 
         let best_dist = loop {
-            let Some(Reverse((dist, node @ (time_left, valves_open, cur_node)))) = pq.pop() else { unreachable!("didn't reach end") };
+            let Some(Reverse((dist, search_node @ (time_left, valves_open, node)))) = pq.pop() else { unreachable!("didn't reach end") };
             {
-                let best_dist = *best.get(&node).expect("popped off node not in best??");
+                let best_dist = *best
+                    .get(&search_node)
+                    .expect("popped off node not in best??");
                 if best_dist < dist {
                     continue;
                 }
                 assert_eq!(best_dist, dist, "popped off dist isn't best dist??");
             }
-            if node.0 == 0 {
+            if time_left == 0 {
                 break dist;
             }
+            let pressure_lost = *valves_open_to_pressure_lost.get(&valves_open).unwrap();
             let adj = {
-                let pressure_lost = *valves_open_to_pressure_lost.get(&valves_open).unwrap();
-                valves_better
-                    .get(cur_node as usize)
-                    .unwrap()
-                    .1
+                let mut iter = dist_matrix[usize::from(node)]
                     .iter()
-                    .map(move |other| ((time_left - 1, valves_open, *other), pressure_lost))
-                    .chain(
-                        ((valves_open >> cur_node) & 1 == 0)
-                            .then(|| {
-                                let cur_rate = valves_better[cur_node as usize].0;
-                                if cur_rate == 0 {
-                                    return None;
-                                }
-                                let new_valves_open = valves_open | (1 << cur_node);
-                                valves_open_to_pressure_lost
-                                    .entry(new_valves_open)
-                                    .or_insert_with(|| pressure_lost - cur_rate);
-                                Some(((time_left - 1, new_valves_open, cur_node), pressure_lost))
-                            })
-                            .flatten(),
-                    )
+                    .enumerate()
+                    .filter_map(|(i, &dist)| {
+                        if dist == 0 || i == usize::from(start_i) || (valves_open >> i) & 1 == 1 {
+                            return None;
+                        }
+                        let cur_rate = flows[i];
+                        let new_valves_open = valves_open | (1 << i);
+                        valves_open_to_pressure_lost
+                            .entry(new_valves_open)
+                            .or_insert_with(|| pressure_lost - cur_rate);
+                        Some((
+                            time_left.checked_sub(u8::try_from(dist + 1).ok()?)?,
+                            new_valves_open,
+                            i.try_into().expect("index can't fit in u8"),
+                        ))
+                    });
+                let iter_next = iter.next();
+                Some(iter_next.unwrap_or((0, 0, 0))).into_iter().chain(iter)
             };
-            for (other_node, weight) in adj {
-                let new_dist = dist + weight;
+            for other_node @ (new_time_left, _, _) in adj {
+                let new_dist = dist + pressure_lost * u64::from(time_left - new_time_left);
                 if let Some(cur_best) = best.get(&other_node) {
                     if *cur_best <= new_dist {
                         continue;
@@ -126,93 +182,123 @@ fn solve(inp: &str, _is_sample: bool) -> (u64, u64) {
         30 * pressure_per_time - best_dist
     };
 
-    type SearchNodePart2 = (u8, u64, u8, u8);
+    // (time left, valves_open, node_1, node_2, delta): pressure lost
+    // delta -ve = node_1 has more time
+    // delta +ve = node_2 has more time
+    type SearchNodePart2 = (u8, u64, u8, u8, i8);
     let part2 = {
         let mut pq = BinaryHeap::<Reverse<(u64, SearchNodePart2)>>::new();
         let mut best = HashMap::<SearchNodePart2, u64>::new();
-        let start_node: SearchNodePart2 = (26, 0, start_i, start_i);
+        let start_node: SearchNodePart2 = (26, 0, start_i, start_i, 0);
         best.insert(start_node, 0);
         pq.push(Reverse((0, start_node)));
 
         let best_dist = loop {
-            let Some(Reverse((dist, node @ (time_left, valves_open, cur_node, cur_node_2)))) = pq.pop() else { unreachable!("didn't reach end") };
+            let Some(Reverse((dist, search_node @ (time_left, valves_open, node_1, node_2, delta)))) = pq.pop() else { unreachable!("didn't reach end") };
             {
-                let best_dist = *best.get(&node).expect("popped off node not in best??");
+                let best_dist = *best
+                    .get(&search_node)
+                    .expect("popped off node not in best??");
                 if best_dist < dist {
                     continue;
                 }
                 assert_eq!(best_dist, dist, "popped off dist isn't best dist??");
             }
-            if node.0 == 0 {
+            if time_left == 0 {
                 break dist;
             }
             let pressure_lost = *valves_open_to_pressure_lost.get(&valves_open).unwrap();
+            for (i, flow) in flows.iter().enumerate() {
+                if i == usize::from(start_i) || (valves_open >> i) & 1 == 1 {
+                    continue;
+                }
+                let new_valves_open = valves_open | (1 << i);
+                valves_open_to_pressure_lost
+                    .entry(new_valves_open)
+                    .or_insert_with(|| pressure_lost - flow);
+            }
             let adj = {
-                valves_better
-                    .get(cur_node as usize)
-                    .unwrap()
-                    .1
+                let iter_1 = dist_matrix[usize::from(node_1)]
                     .iter()
-                    .map(move |other| (0, *other))
-                    .chain(
-                        ((valves_open >> cur_node) & 1 == 0)
-                            .then(|| {
-                                let cur_rate = valves_better[cur_node as usize].0;
-                                if cur_rate == 0 {
-                                    return None;
-                                }
-                                let bit = 1 << cur_node;
-                                let new_valves_open = valves_open | bit;
-                                valves_open_to_pressure_lost
-                                    .entry(new_valves_open)
-                                    .or_insert_with(|| pressure_lost - cur_rate);
-                                Some((bit, cur_node))
-                            })
-                            .flatten(),
-                    )
-                    .cartesian_product(
-                        valves_better
-                            .get(cur_node_2 as usize)
-                            .unwrap()
-                            .1
-                            .iter()
-                            .map(move |other| (0, *other))
-                            .chain(
-                                ((valves_open >> cur_node_2) & 1 == 0)
-                                    .then(|| {
-                                        let cur_rate = valves_better[cur_node_2 as usize].0;
-                                        if cur_rate == 0 {
-                                            return None;
-                                        }
-                                        let bit = 1 << cur_node_2;
-                                        let new_valves_open = valves_open | bit;
-                                        valves_open_to_pressure_lost
-                                            .entry(new_valves_open)
-                                            .or_insert_with(|| pressure_lost - cur_rate);
-                                        Some((bit, cur_node_2))
-                                    })
-                                    .flatten(),
-                            ),
-                    )
-                    .map(|((bit_1, node_1), (bit_2, node_2))| {
-                        if bit_1 != 0 && bit_2 != 0 {
-                            let new_valves_open = valves_open | bit_1 | bit_2;
-                            valves_open_to_pressure_lost
-                                .entry(new_valves_open)
-                                .or_insert_with(|| {
-                                    pressure_lost
-                                        - valves_better[node_1 as usize].0
-                                        - valves_better[node_2 as usize].0
-                                });
+                    .enumerate()
+                    .filter_map(|(i, &dist)| {
+                        if dist == 0 || i == usize::from(start_i) || (valves_open >> i) & 1 == 1 {
+                            return None;
                         }
-                        (
-                            (time_left - 1, valves_open | bit_1 | bit_2, node_1, node_2),
-                            pressure_lost,
-                        )
-                    })
+                        let new_valves_open = valves_open | (1 << i);
+
+                        // if we should've gone here earlier
+                        let i = i.try_into().expect("index can't fit in u8");
+                        if delta < 0 {
+                            let time_spent = u8::try_from(dist + 1)
+                                .ok()?
+                                // this checked sub ensures that we never
+                                // take a distance which exceeded our delta
+                                .checked_sub(delta.unsigned_abs())?;
+                            Some((
+                                time_left.checked_sub(time_spent)?,
+                                new_valves_open,
+                                i,
+                                node_2,
+                                i8::try_from(time_spent).ok()?,
+                            ))
+                        } else {
+                            Some((
+                                time_left.checked_sub(u8::try_from(dist + 1).ok()?)?,
+                                new_valves_open,
+                                i,
+                                node_2,
+                                // if delta + dist > 128, this is probably
+                                // suboptimal anyway
+                                delta.checked_add(i8::try_from(dist + 1).ok()?)?,
+                            ))
+                        }
+                    });
+                let iter_2 = dist_matrix[usize::from(node_2)]
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, &dist)| {
+                        if dist == 0 || i == usize::from(start_i) || (valves_open >> i) & 1 == 1 {
+                            return None;
+                        }
+                        let new_valves_open = valves_open | (1 << i);
+
+                        // if we should've gone here earlier
+                        let i = i.try_into().expect("index can't fit in u8");
+                        if delta > 0 {
+                            let time_spent = u8::try_from(dist + 1)
+                                .ok()?
+                                // this checked sub ensures that we never
+                                // take a distance which exceeded our delta
+                                .checked_sub(delta.unsigned_abs())?;
+                            Some((
+                                time_left.checked_sub(time_spent)?,
+                                new_valves_open,
+                                node_1,
+                                i,
+                                i8::try_from(-i16::from(time_spent)).ok()?,
+                            ))
+                        } else {
+                            Some((
+                                time_left.checked_sub(u8::try_from(dist + 1).ok()?)?,
+                                new_valves_open,
+                                node_1,
+                                i,
+                                // if delta + dist > 128, this is probably
+                                // suboptimal anyway
+                                delta.checked_sub(i8::try_from(dist + 1).ok()?)?,
+                            ))
+                        }
+                    });
+                let mut combined = iter_1.chain(iter_2);
+
+                let combined_next = combined.next();
+                Some(combined_next.unwrap_or((0, 0, 0, 0, 0)))
+                    .into_iter()
+                    .chain(combined)
             };
-            for (other_node, weight) in adj {
-                let new_dist = dist + weight;
+            for other_node @ (new_time_left, _, _, _, _) in adj {
+                let new_dist = dist + pressure_lost * u64::from(time_left - new_time_left);
                 if let Some(cur_best) = best.get(&other_node) {
                     if *cur_best <= new_dist {
                         continue;
