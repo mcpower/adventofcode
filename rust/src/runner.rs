@@ -64,7 +64,7 @@ where
         .filter(|s| !s.is_empty())
     {
         println!("=== SAMPLE ===");
-        println!("input: {:?}", &sample[..20]);
+        println!("input: {:?}", &sample[..20.min(sample.len())]);
         let (part1, part2) = solve(sample, true);
         println!("part 1:\n{}", part1);
         println!("part 2:\n{}", part2);
