@@ -1,10 +1,13 @@
-use std::collections::HashMap;
+use std::{
+    cmp::Reverse,
+    collections::{BinaryHeap, HashMap, HashSet},
+};
 
 use itertools::Itertools;
 use mcpower_aoc::runner::run_samples_and_arg;
 use regex::Regex;
 
-#[derive(Hash, Debug, PartialEq, Eq, Clone)]
+#[derive(Hash, Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
 struct DpState {
     time_left: u8,
     ore: u64,
@@ -22,9 +25,9 @@ struct DpState {
 }
 
 impl DpState {
-    fn new() -> Self {
+    fn new(original_time: u8) -> Self {
         Self {
-            time_left: 24,
+            time_left: original_time,
             ore: 0,
             clay: 0,
             obsidian: 0,
@@ -119,6 +122,63 @@ impl DpState {
             ..self.do_nothing()
         })
     }
+
+    fn expand(
+        &self,
+        blueprint: &Blueprint,
+    ) -> std::iter::Flatten<std::array::IntoIter<Option<DpState>, 5>> {
+        let ore = if !self.skipped_ore_robot {
+            self.make_ore_robot(blueprint)
+        } else {
+            None
+        };
+        let clay = if !self.skipped_clay_robot {
+            self.make_clay_robot(blueprint)
+        } else {
+            None
+        };
+        let obsidian = if !self.skipped_obsidian_robot {
+            self.make_obsidian_robot(blueprint)
+        } else {
+            None
+        };
+        let geode = if !self.skipped_geode_robot {
+            self.make_geode_robot(blueprint)
+        } else {
+            None
+        };
+        let mut nothing = self.do_nothing();
+        if ore.is_some() {
+            nothing.skipped_ore_robot = true;
+        }
+        if clay.is_some() {
+            nothing.skipped_clay_robot = true;
+        }
+        if obsidian.is_some() {
+            nothing.skipped_obsidian_robot = true;
+        }
+        if geode.is_some() {
+            nothing.skipped_geode_robot = true;
+        }
+        [ore, clay, obsidian, geode, Some(nothing)]
+            .into_iter()
+            .flatten()
+    }
+
+    /// Total wasted geodes at the moment.
+    fn _total_wasted_geodes(&self, original_time: u8) -> u64 {
+        let original_time = u64::from(original_time);
+        let time_left = u64::from(self.time_left);
+        (original_time - time_left) * original_time - self.geodes
+    }
+
+    /// Undestimate of total wasted geodes at the end.
+    fn total_wasted_geodes_guess(&self, original_time: u8) -> u64 {
+        let original_time = u64::from(original_time);
+        let time_left = u64::from(self.time_left);
+        original_time * original_time
+            - (self.geodes + self.geode_robots * time_left + time_left * (time_left - 1) / 2)
+    }
 }
 
 #[derive(Debug)]
@@ -132,7 +192,7 @@ struct Blueprint {
     geode_robot_obsidian_cost: u8,
 }
 
-fn dp(blueprint: &Blueprint, state: DpState, cache: &mut HashMap<DpState, u64>) -> u64 {
+fn _dp(blueprint: &Blueprint, state: DpState, cache: &mut HashMap<DpState, u64>) -> u64 {
     if state.time_left == 0 {
         return state.geodes;
     }
@@ -141,68 +201,41 @@ fn dp(blueprint: &Blueprint, state: DpState, cache: &mut HashMap<DpState, u64>) 
         return *cached;
     }
 
-    let mut out = 0;
-    let ore = if !state.skipped_ore_robot {
-        if let Some(new_state) = state.make_ore_robot(blueprint) {
-            out = out.max(dp(blueprint, new_state, cache));
-            true
-        } else {
-            false
-        }
-    } else {
-        false
-    };
-    let clay = if !state.skipped_clay_robot {
-        if let Some(new_state) = state.make_clay_robot(blueprint) {
-            out = out.max(dp(blueprint, new_state, cache));
-            true
-        } else {
-            false
-        }
-    } else {
-        false
-    };
-    let obsidian = if !state.skipped_obsidian_robot {
-        if let Some(new_state) = state.make_obsidian_robot(blueprint) {
-            out = out.max(dp(blueprint, new_state, cache));
-            true
-        } else {
-            false
-        }
-    } else {
-        false
-    };
-    let geode = if !state.skipped_geode_robot {
-        if let Some(new_state) = state.make_geode_robot(blueprint) {
-            out = out.max(dp(blueprint, new_state, cache));
-            true
-        } else {
-            false
-        }
-    } else {
-        false
-    };
-
-    let mut nothing = state.do_nothing();
-    if ore {
-        nothing.skipped_ore_robot = true;
-    }
-    if clay {
-        nothing.skipped_clay_robot = true;
-    }
-    if obsidian {
-        nothing.skipped_obsidian_robot = true;
-    }
-    if geode {
-        nothing.skipped_geode_robot = true;
-    }
-    out = out.max(dp(blueprint, nothing, cache));
+    let out = state
+        .expand(blueprint)
+        .map(|new_state| _dp(blueprint, new_state, cache))
+        .max()
+        .unwrap_or(0);
 
     cache.insert(state, out);
     out
 }
 
-fn solve(inp: &str, _is_sample: bool) -> (u64, i64) {
+fn dijkstra(blueprint: &Blueprint, original_time: u8) -> u64 {
+    let mut pq = BinaryHeap::<Reverse<(u64, DpState)>>::new();
+    pq.push(Reverse((0, DpState::new(original_time))));
+    let mut seen: HashSet<DpState> = HashSet::new();
+    loop {
+        let Some(Reverse((_, state))) = pq.pop() else {
+            unreachable!("didn't get end");
+        };
+        if state.time_left == 0 {
+            break state.geodes;
+        }
+
+        for new_state in state.expand(blueprint) {
+            if !seen.contains(&new_state) {
+                pq.push(Reverse((
+                    new_state.total_wasted_geodes_guess(original_time),
+                    new_state.clone(),
+                )));
+                seen.insert(new_state);
+            }
+        }
+    }
+}
+
+fn solve(inp: &str, _is_sample: bool) -> (u64, u64) {
     let re = Regex::new(r"^Blueprint (\d+): Each ore robot costs (\d+) ore. Each clay robot costs (\d+) ore. Each obsidian robot costs (\d+) ore and (\d+) clay. Each geode robot costs (\d+) ore and (\d+) obsidian.$").unwrap();
     let blueprints = inp
         .lines()
@@ -241,12 +274,14 @@ fn solve(inp: &str, _is_sample: bool) -> (u64, i64) {
         .collect::<Vec<_>>();
     let part1 = blueprints
         .iter()
-        .map(|blueprint| {
-            dbg!(dp(blueprint, DpState::new(), &mut HashMap::new())) * u64::from(blueprint.id)
-        })
+        .map(|blueprint| dijkstra(blueprint, 24) * u64::from(blueprint.id))
         .sum::<u64>();
 
-    let part2 = 0;
+    let part2 = blueprints
+        .iter()
+        .take(3)
+        .map(|blueprint| dijkstra(blueprint, 32))
+        .product();
 
     (part1, part2)
 }
