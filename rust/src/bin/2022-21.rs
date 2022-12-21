@@ -86,24 +86,29 @@ fn solve(inp: &str, _is_sample: bool) -> (i64, i64) {
             compute_result_part2(left, &monkeys, me).cmp(&compute_result_part2(right, &monkeys, me))
         };
         // meta: we know AoC answers are always positive
-        let mut lo = 0;
-        let mut hi = 1;
-        let lo_ordering = is_good(lo);
-        while is_good(hi) == lo_ordering {
-            lo = hi;
-            hi *= 2;
-        }
-        while hi - lo > 1 {
-            let mid = lo + (hi - lo) / 2;
-            if is_good(mid) == lo_ordering {
-                lo = mid;
-            } else {
-                hi = mid;
-            }
-        }
-        assert!(is_good(hi).is_eq());
 
-        hi
+        let lo_ordering = is_good(0);
+        if lo_ordering.is_eq() {
+            0
+        } else {
+            let mut lo = 0;
+            let mut hi = 1;
+            while is_good(hi) == lo_ordering {
+                lo = hi;
+                hi *= 2;
+            }
+            while hi - lo > 1 {
+                let mid = lo + (hi - lo) / 2;
+                if is_good(mid) == lo_ordering {
+                    lo = mid;
+                } else {
+                    hi = mid;
+                }
+            }
+            assert!(is_good(hi).is_eq());
+
+            hi
+        }
     };
 
     (part1, part2)
