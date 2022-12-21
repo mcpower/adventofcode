@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
 use mcpower_aoc::runner::run_samples_and_arg;
-use once_cell::unsync::OnceCell;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum Job<'a> {
     Num(i64),
     Add(&'a str, &'a str),
@@ -12,36 +11,48 @@ enum Job<'a> {
     Div(&'a str, &'a str),
 }
 
-fn compute_result<'a>(
-    monkey: &'a str,
-    monkeys: &HashMap<&'a str, Job<'a>>,
-    monkey_results: &HashMap<&'a str, OnceCell<i64>>,
-) -> i64 {
-    *monkey_results.get(monkey).unwrap().get_or_init(|| {
-        let job = monkeys.get(monkey).unwrap();
-        match *job {
-            Job::Num(num) => num,
-            Job::Add(a, b) => {
-                compute_result(a, monkeys, monkey_results)
-                    + compute_result(b, monkeys, monkey_results)
-            }
-            Job::Sub(a, b) => {
-                compute_result(a, monkeys, monkey_results)
-                    - compute_result(b, monkeys, monkey_results)
-            }
-            Job::Mul(a, b) => {
-                compute_result(a, monkeys, monkey_results)
-                    * compute_result(b, monkeys, monkey_results)
-            }
-            Job::Div(a, b) => {
-                let a = compute_result(a, monkeys, monkey_results);
-                let b = compute_result(b, monkeys, monkey_results);
-                assert_eq!(a % b, 0, "division resulted in remainder");
-                a / b
-            }
+fn compute_result<'a>(monkey: &'a str, monkeys: &HashMap<&'a str, Job<'a>>) -> i64 {
+    match *monkeys.get(monkey).unwrap() {
+        Job::Num(num) => num,
+        Job::Add(a, b) => compute_result(a, monkeys) + compute_result(b, monkeys),
+        Job::Sub(a, b) => compute_result(a, monkeys) - compute_result(b, monkeys),
+        Job::Mul(a, b) => compute_result(a, monkeys) * compute_result(b, monkeys),
+        Job::Div(a, b) => {
+            let a = compute_result(a, monkeys);
+            let b = compute_result(b, monkeys);
+            assert_eq!(a % b, 0, "division resulted in remainder");
+            a / b
         }
-    })
+    }
 }
+
+fn compute_result_part2<'a>(monkey: &'a str, monkeys: &HashMap<&'a str, Job<'a>>, me: i64) -> i64 {
+    let job = if monkey == "humn" {
+        return me;
+    } else {
+        monkeys.get(monkey).unwrap()
+    };
+    match *job {
+        Job::Num(num) => num,
+        Job::Add(a, b) => {
+            compute_result_part2(a, monkeys, me) + compute_result_part2(b, monkeys, me)
+        }
+        Job::Sub(a, b) => {
+            compute_result_part2(a, monkeys, me) - compute_result_part2(b, monkeys, me)
+        }
+        Job::Mul(a, b) => {
+            compute_result_part2(a, monkeys, me) * compute_result_part2(b, monkeys, me)
+        }
+        Job::Div(a, b) => {
+            let a = compute_result_part2(a, monkeys, me);
+            let b = compute_result_part2(b, monkeys, me);
+            // assumption: this works with floor division. lol
+            // assert_eq!(a % b, 0, "division resulted in remainder");
+            a / b
+        }
+    }
+}
+
 fn solve(inp: &str, _is_sample: bool) -> (i64, i64) {
     let monkeys: HashMap<&str, Job> = {
         inp.lines()
@@ -59,13 +70,41 @@ fn solve(inp: &str, _is_sample: bool) -> (i64, i64) {
             })
             .collect()
     };
-    let monkey_results: HashMap<&str, OnceCell<i64>> = monkeys
-        .iter()
-        .map(|(k, _v)| (*k, OnceCell::new()))
-        .collect();
-    let part1 = compute_result("root", &monkeys, &monkey_results);
+    // TODO: assert tree and not dag
+    let part1 = compute_result("root", &monkeys);
 
-    let part2 = 0;
+    let part2 = {
+        let (left, right) = match *monkeys.get("root").unwrap() {
+            Job::Num(_) => unreachable!(),
+            Job::Add(a, b) => (a, b),
+            Job::Sub(a, b) => (a, b),
+            Job::Mul(a, b) => (a, b),
+            Job::Div(a, b) => (a, b),
+        };
+        // as we know we have a dag, we can do a binary search :)
+        let is_good = |me: i64| {
+            compute_result_part2(left, &monkeys, me).cmp(&compute_result_part2(right, &monkeys, me))
+        };
+        // meta: we know AoC answers are always positive
+        let mut lo = 0;
+        let mut hi = 1;
+        let lo_ordering = is_good(lo);
+        while is_good(hi) == lo_ordering {
+            lo = hi;
+            hi *= 2;
+        }
+        while hi - lo > 1 {
+            let mid = lo + (hi - lo) / 2;
+            if is_good(mid) == lo_ordering {
+                lo = mid;
+            } else {
+                hi = mid;
+            }
+        }
+        assert!(is_good(hi).is_eq());
+
+        hi
+    };
 
     (part1, part2)
 }
