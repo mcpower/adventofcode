@@ -60,7 +60,7 @@ where
 {
     for sample in samples
         .iter()
-        .map(|s| s.trim_start())
+        .map(|s| s.trim_start_matches('\n'))
         .filter(|s| !s.is_empty())
     {
         println!("=== SAMPLE ===");
