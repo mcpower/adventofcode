@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 
 use itertools::Itertools;
-use mcpower_aoc::runner::run_samples_and_arg;
+use mcpower_aoc::{runner::run_samples_and_arg, utils::slice_shift_char};
 
 #[derive(Debug)]
 enum Packet {
@@ -50,12 +50,6 @@ impl Ord for Packet {
             },
         }
     }
-}
-
-// from https://github.com/rust-lang/rust/issues/48731#issuecomment-370235493
-fn slice_shift_char(a: &str) -> Option<(char, &str)> {
-    let mut chars = a.chars();
-    chars.next().map(|c| (c, chars.as_str()))
 }
 
 fn parse_partial(line: &str) -> (Packet, &str) {
