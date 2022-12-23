@@ -64,17 +64,24 @@ impl std::ops::Mul<i64> for Vec2 {
     }
 }
 
-impl std::ops::Mul<Vec2> for i64 {
-    type Output = Vec2;
-
-    fn mul(self, rhs: Vec2) -> Self::Output {
-        Vec2(self * rhs.0, self * rhs.1)
-    }
-}
-
 impl std::ops::MulAssign<i64> for Vec2 {
     fn mul_assign(&mut self, rhs: i64) {
         self.0 *= rhs;
         self.1 *= rhs;
+    }
+}
+
+impl std::ops::Div<i64> for Vec2 {
+    type Output = Vec2;
+
+    fn div(self, rhs: i64) -> Self::Output {
+        Vec2(self.0 / rhs, self.1 / rhs)
+    }
+}
+
+impl std::ops::DivAssign<i64> for Vec2 {
+    fn div_assign(&mut self, rhs: i64) {
+        self.0 /= rhs;
+        self.1 /= rhs;
     }
 }
