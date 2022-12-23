@@ -198,100 +198,6 @@ fn solve(inp: &str, is_sample: bool) -> (i64, i64) {
             .unwrap() as i64,
     );
     let start_dir = Facing::Right;
-    let part1 = {
-        let mut pos = start_pos;
-        let mut dir = start_dir;
-
-        for &m in &path {
-            match m {
-                Move::Forward(steps) => {
-                    let delta = dir.vec();
-                    for _ in 0..steps {
-                        let Vec2(r, c) = pos + delta;
-                        if 0 <= r {
-                            let r = r as usize;
-                            if let Some(row) = map.get(r) {
-                                if 0 <= c {
-                                    let c = c as usize;
-                                    if let Some(thing) = row.get(c) {
-                                        // hooray!
-                                        match *thing {
-                                            Some(true) => {
-                                                // hit a wall, do nothing
-                                                break;
-                                            }
-                                            Some(false) => {
-                                                // new place found
-                                                pos = Vec2(r as i64, c as i64);
-                                                continue;
-                                            }
-                                            None => {
-                                                // do nothing, as this means
-                                                // that we hit empty space
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        // we didn't find something good...
-                        // look in the direction opposite of your current
-                        // facing as far as you can until you find the
-                        // opposite edge of the board, then reappear there.
-                        let new_pos = {
-                            let mut old = pos;
-                            let mut new = pos - delta;
-                            loop {
-                                let Vec2(r, c) = new;
-                                if 0 <= r {
-                                    let r = r as usize;
-                                    if let Some(row) = map.get(r) {
-                                        if 0 <= c {
-                                            let c = c as usize;
-                                            if let Some(thing) = row.get(c) {
-                                                // hooray!
-                                                if thing.is_some() {
-                                                    old = new;
-                                                    new = old - delta;
-                                                    continue;
-                                                }
-                                                // do nothing, as this means
-                                                // that we hit empty space
-                                            }
-                                        }
-                                    }
-                                }
-                                break old;
-                            }
-                        };
-                        // see whether we can move now
-                        if map
-                            .get(new_pos.0 as usize)
-                            .unwrap()
-                            .get(new_pos.1 as usize)
-                            .unwrap()
-                            .unwrap()
-                        {
-                            // hit a wall
-                            break;
-                        } else {
-                            // new place found
-                            pos = new_pos;
-                        }
-                    }
-                }
-                Move::Left => {
-                    dir = dir.turn_left();
-                }
-                Move::Right => {
-                    dir = dir.turn_right();
-                }
-            }
-        }
-
-        let Vec2(r, c) = pos;
-        1000 * (1 + r) + 4 * (1 + c) + (dir as i64)
-    };
 
     let cube_size = if is_sample { 4 } else { 50 };
     let is_valid_cube_pos = |Vec2(row, col): Vec2| {
@@ -379,7 +285,7 @@ fn solve(inp: &str, is_sample: bool) -> (i64, i64) {
         }
     }
 
-    let part2 = {
+    let solve = |part_2: bool| {
         let mut pos = start_pos;
         let mut dir = start_dir;
 
@@ -415,71 +321,108 @@ fn solve(inp: &str, is_sample: bool) -> (i64, i64) {
                             }
                         }
                         // we didn't find something good...
-                        // which cube pos are we currently in?
-                        let cube_pos = pos / (cube_size as i64);
-                        assert!(is_valid_cube_pos(cube_pos));
-                        let face = *cube_pos_assignments.get(&cube_pos).unwrap();
-                        let neighbours = *face_neighbours.get(&face).unwrap();
+                        // look in the direction opposite of your current
+                        // facing as far as you can until you find the
+                        // opposite edge of the board, then reappear there.
+                        let (new_pos, new_dir) = if part_2 {
+                            // we didn't find something good...
+                            // which cube pos are we currently in?
+                            let cube_pos = pos / (cube_size as i64);
+                            assert!(is_valid_cube_pos(cube_pos));
+                            let face = *cube_pos_assignments.get(&cube_pos).unwrap();
+                            let neighbours = *face_neighbours.get(&face).unwrap();
 
-                        // which cube pos
-                        let target_face = neighbours.get_face(dir);
-                        let target_cube_pos = *inv_cube_pos_assignments.get(&target_face).unwrap();
+                            // which cube pos
+                            let target_face = neighbours.get_face(dir);
+                            let target_cube_pos =
+                                *inv_cube_pos_assignments.get(&target_face).unwrap();
 
-                        // which side of the target did we come from?
-                        let target_face_side = {
-                            let target_face_neighbours = face_neighbours.get(&target_face).unwrap();
-                            if face == target_face_neighbours.right {
-                                Facing::Right
-                            } else if face == target_face_neighbours.down {
-                                Facing::Down
-                            } else if face == target_face_neighbours.left {
-                                Facing::Left
-                            } else {
-                                assert_eq!(face, target_face_neighbours.up);
-                                Facing::Up
-                            }
-                        };
-
-                        // which direction should we be facing?
-                        let new_dir = target_face_side.turn_around();
-
-                        // where were we on the edge?
-                        // (going clockwise, 0 to cube_size-1)
-                        let start_edge_pos = match dir {
-                            Facing::Right => {
-                                // only interested in row
-                                pos.0 - cube_pos.0 * (cube_size as i64)
-                            }
-                            Facing::Down => {
-                                // inverted!
-                                // only interested in col
-                                (cube_size as i64 - 1) - (pos.1 - cube_pos.1 * (cube_size as i64))
-                            }
-                            Facing::Left => {
-                                // inverted!
-                                // only interested in row
-                                (cube_size as i64 - 1) - (pos.0 - cube_pos.0 * (cube_size as i64))
-                            }
-                            Facing::Up => {
-                                // only interested in col
-                                pos.1 - cube_pos.1 * (cube_size as i64)
-                            }
-                        };
-                        // where should we be on the new edge?
-                        let end_edge_pos = (cube_size as i64 - 1) - start_edge_pos;
-                        let new_pos = {
-                            let top_left = target_cube_pos * (cube_size as i64);
-                            let pos_in_cube_side = match target_face_side {
-                                Facing::Right => Vec2(end_edge_pos, cube_size as i64 - 1),
-                                Facing::Down => {
-                                    Vec2(cube_size as i64 - 1, cube_size as i64 - 1 - end_edge_pos)
+                            // which side of the target did we come from?
+                            let target_face_side = {
+                                let target_face_neighbours =
+                                    face_neighbours.get(&target_face).unwrap();
+                                if face == target_face_neighbours.right {
+                                    Facing::Right
+                                } else if face == target_face_neighbours.down {
+                                    Facing::Down
+                                } else if face == target_face_neighbours.left {
+                                    Facing::Left
+                                } else {
+                                    assert_eq!(face, target_face_neighbours.up);
+                                    Facing::Up
                                 }
-                                Facing::Left => Vec2((cube_size as i64 - 1) - end_edge_pos, 0),
-                                Facing::Up => Vec2(0, end_edge_pos),
                             };
-                            top_left + pos_in_cube_side
-                        };
 
+                            // which direction should we be facing?
+                            let new_dir = target_face_side.turn_around();
+
+                            // where were we on the edge?
+                            // (going clockwise, 0 to cube_size-1)
+                            let start_edge_pos = match dir {
+                                Facing::Right => {
+                                    // only interested in row
+                                    pos.0 - cube_pos.0 * (cube_size as i64)
+                                }
+                                Facing::Down => {
+                                    // inverted!
+                                    // only interested in col
+                                    (cube_size as i64 - 1)
+                                        - (pos.1 - cube_pos.1 * (cube_size as i64))
+                                }
+                                Facing::Left => {
+                                    // inverted!
+                                    // only interested in row
+                                    (cube_size as i64 - 1)
+                                        - (pos.0 - cube_pos.0 * (cube_size as i64))
+                                }
+                                Facing::Up => {
+                                    // only interested in col
+                                    pos.1 - cube_pos.1 * (cube_size as i64)
+                                }
+                            };
+                            // where should we be on the new edge?
+                            let end_edge_pos = (cube_size as i64 - 1) - start_edge_pos;
+                            let new_pos = {
+                                let top_left = target_cube_pos * (cube_size as i64);
+                                let pos_in_cube_side = match target_face_side {
+                                    Facing::Right => Vec2(end_edge_pos, cube_size as i64 - 1),
+                                    Facing::Down => Vec2(
+                                        cube_size as i64 - 1,
+                                        cube_size as i64 - 1 - end_edge_pos,
+                                    ),
+                                    Facing::Left => Vec2((cube_size as i64 - 1) - end_edge_pos, 0),
+                                    Facing::Up => Vec2(0, end_edge_pos),
+                                };
+                                top_left + pos_in_cube_side
+                            };
+                            (new_pos, new_dir)
+                        } else {
+                            let mut old = pos;
+                            let mut new = pos - dir.vec();
+                            let new_pos = loop {
+                                let Vec2(r, c) = new;
+                                if 0 <= r {
+                                    let r = r as usize;
+                                    if let Some(row) = map.get(r) {
+                                        if 0 <= c {
+                                            let c = c as usize;
+                                            if let Some(thing) = row.get(c) {
+                                                // hooray!
+                                                if thing.is_some() {
+                                                    old = new;
+                                                    new = old - dir.vec();
+                                                    continue;
+                                                }
+                                                // do nothing, as this means
+                                                // that we hit empty space
+                                            }
+                                        }
+                                    }
+                                }
+                                break old;
+                            };
+                            (new_pos, dir)
+                        };
                         // see whether we can move now
                         if map
                             .get(new_pos.0 as usize)
@@ -510,7 +453,7 @@ fn solve(inp: &str, is_sample: bool) -> (i64, i64) {
         1000 * (1 + r) + 4 * (1 + c) + (dir as i64)
     };
 
-    (part1, part2)
+    (solve(false), solve(true))
 }
 
 fn main() {
