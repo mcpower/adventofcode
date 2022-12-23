@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{cmp::Ordering, collections::HashMap};
 
 use mcpower_aoc::runner::run_samples_and_arg;
 
@@ -26,31 +26,36 @@ fn compute_result<'a>(monkey: &'a str, monkeys: &HashMap<&'a str, Job<'a>>) -> i
     }
 }
 
-fn compute_result_part2<'a>(monkey: &'a str, monkeys: &HashMap<&'a str, Job<'a>>, me: i64) -> i64 {
+fn compute_result_part2<'a>(
+    monkey: &'a str,
+    monkeys: &HashMap<&'a str, Job<'a>>,
+    me: i64,
+) -> Option<i64> {
     let job = if monkey == "humn" {
-        return me;
+        return Some(me);
     } else {
         monkeys.get(monkey).unwrap()
     };
-    match *job {
+    Some(match *job {
         Job::Num(num) => num,
         Job::Add(a, b) => {
-            compute_result_part2(a, monkeys, me) + compute_result_part2(b, monkeys, me)
+            compute_result_part2(a, monkeys, me)? + compute_result_part2(b, monkeys, me)?
         }
         Job::Sub(a, b) => {
-            compute_result_part2(a, monkeys, me) - compute_result_part2(b, monkeys, me)
+            compute_result_part2(a, monkeys, me)? - compute_result_part2(b, monkeys, me)?
         }
         Job::Mul(a, b) => {
-            compute_result_part2(a, monkeys, me) * compute_result_part2(b, monkeys, me)
+            compute_result_part2(a, monkeys, me)? * compute_result_part2(b, monkeys, me)?
         }
         Job::Div(a, b) => {
-            let a = compute_result_part2(a, monkeys, me);
-            let b = compute_result_part2(b, monkeys, me);
-            // assumption: this works with floor division. lol
-            // assert_eq!(a % b, 0, "division resulted in remainder");
+            let a = compute_result_part2(a, monkeys, me)?;
+            let b = compute_result_part2(b, monkeys, me)?;
+            if a % b != 0 {
+                return None;
+            }
             a / b
         }
-    }
+    })
 }
 
 fn solve(inp: &str, _is_sample: bool) -> (i64, i64) {
@@ -81,9 +86,47 @@ fn solve(inp: &str, _is_sample: bool) -> (i64, i64) {
             Job::Mul(a, b) => (a, b),
             Job::Div(a, b) => (a, b),
         };
+        let mut is_possibly_good_cache = HashMap::new();
         // as we know we have a dag, we can do a binary search :)
-        let is_good = |me: i64| {
-            compute_result_part2(left, &monkeys, me).cmp(&compute_result_part2(right, &monkeys, me))
+        // we should probably cache this...
+        let mut is_possibly_good = |me: i64| {
+            *is_possibly_good_cache.entry(me).or_insert_with(|| {
+                Some(
+                    compute_result_part2(left, &monkeys, me)?
+                        .cmp(&compute_result_part2(right, &monkeys, me)?),
+                )
+            })
+        };
+        let mut is_good = |me: i64| {
+            let mut left_me = me;
+            let mut left = is_possibly_good(left_me);
+            while left.is_none() {
+                left_me -= 1;
+                left = is_possibly_good(left_me);
+            }
+            let left = left.unwrap();
+
+            let mut right_me = me;
+            let mut right = is_possibly_good(right_me);
+            while right.is_none() {
+                right_me += 1;
+                right = is_possibly_good(right_me);
+            }
+            let right = right.unwrap();
+
+            match (left, right) {
+                (Ordering::Equal, Ordering::Equal) => Ordering::Equal,
+                (a, Ordering::Equal) => a,
+                (Ordering::Equal, b) => b,
+                (Ordering::Less, Ordering::Less) => Ordering::Less,
+                (Ordering::Less, Ordering::Greater) => {
+                    unreachable!("discontinuity and couldn't find equal")
+                }
+                (Ordering::Greater, Ordering::Less) => {
+                    unreachable!("inverse discontinuity? this should never happen")
+                }
+                (Ordering::Greater, Ordering::Greater) => Ordering::Greater,
+            }
         };
         // meta: we know AoC answers are always positive
 
@@ -99,10 +142,14 @@ fn solve(inp: &str, _is_sample: bool) -> (i64, i64) {
             }
             while hi - lo > 1 {
                 let mid = lo + (hi - lo) / 2;
-                if is_good(mid) == lo_ordering {
+                let result = is_good(mid);
+                if result == lo_ordering {
                     lo = mid;
                 } else {
                     hi = mid;
+                    if result.is_eq() {
+                        break;
+                    }
                 }
             }
             assert!(is_good(hi).is_eq());
