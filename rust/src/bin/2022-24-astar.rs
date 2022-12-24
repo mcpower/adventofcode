@@ -1,6 +1,6 @@
 use std::{
     cmp::Reverse,
-    collections::{BinaryHeap, HashSet},
+    collections::{BinaryHeap, HashMap, HashSet},
 };
 
 use mcpower_aoc::{
@@ -39,19 +39,19 @@ fn solve(inp: &str, _is_sample: bool) -> (i64, i64) {
         .collect::<Vec<_>>();
 
     type SearchNode = (i64, Vec2);
-    let expand = |(time, pos): SearchNode, goal: Vec2| {
-        let blizzards = initial_blizzards
-            .iter()
-            .map(|&(initial_pos, delta)| {
-                let mut out = initial_pos + ((time + 1) * delta);
-                out.0 = out.0.rem_euclid(inner_rows);
-                out.1 = out.1.rem_euclid(inner_cols);
-                out
-            })
-            // turns out the below _slows things down_
-            // .filter(|v| (*v - pos).norm_inf() <= 1)
-            // Vec is faster than HashSet here
-            .collect::<Vec<_>>();
+    let mut cache = HashMap::<i64, HashSet<Vec2>>::new();
+    let mut expand = |(time, pos): SearchNode, goal: Vec2| {
+        let blizzards = cache.entry(time).or_insert_with(|| {
+            initial_blizzards
+                .iter()
+                .map(|&(initial_pos, delta)| {
+                    let mut out = initial_pos + ((time + 1) * delta);
+                    out.0 = out.0.rem_euclid(inner_rows);
+                    out.1 = out.1.rem_euclid(inner_cols);
+                    out
+                })
+                .collect()
+        });
         FOUR_ADJ
             .iter()
             .map(move |delta| pos + *delta)
@@ -64,13 +64,15 @@ fn solve(inp: &str, _is_sample: bool) -> (i64, i64) {
             })
             .chain(std::iter::once(pos))
             .filter(move |new_pos| !blizzards.contains(new_pos))
+            // Collect here so we don't need to clone the above.
+            .collect::<Vec<_>>()
     };
 
     let start = Vec2(-1, 0);
     let goal = Vec2(inner_rows, inner_cols - 1);
     let f = |(time, pos): SearchNode, goal: Vec2| time + (pos - goal).norm_1();
 
-    let a_star = |start_node: SearchNode, goal: Vec2| {
+    let mut a_star = |start_node: SearchNode, goal: Vec2| {
         let mut open = BinaryHeap::<Reverse<(i64, SearchNode)>>::new();
         let first_node = Reverse((f(start_node, goal), start_node));
         open.push(first_node);
