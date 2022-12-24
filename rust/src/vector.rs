@@ -85,3 +85,5 @@ impl std::ops::DivAssign<i64> for Vec2 {
         self.1 /= rhs;
     }
 }
+
+pub const FOUR_ADJ: [Vec2; 4] = [Vec2(-1, 0), Vec2(0, 1), Vec2(1, 0), Vec2(0, -1)];
