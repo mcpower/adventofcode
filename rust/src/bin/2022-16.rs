@@ -165,7 +165,9 @@ fn solve(inp: &str, _is_sample: bool) -> (u64, u64) {
                         ))
                     });
                 let iter_next = iter.next();
-                Some(iter_next.unwrap_or((0, 0, 0))).into_iter().chain(iter)
+                std::iter::once(iter_next.unwrap_or((0, 0, 0)))
+                    .into_iter()
+                    .chain(iter)
             };
             for other_node @ (new_time_left, _, _) in adj {
                 let new_dist = dist + pressure_lost * u64::from(time_left - new_time_left);
@@ -293,7 +295,7 @@ fn solve(inp: &str, _is_sample: bool) -> (u64, u64) {
                 let mut combined = iter_1.chain(iter_2);
 
                 let combined_next = combined.next();
-                Some(combined_next.unwrap_or((0, 0, 0, 0, 0)))
+                std::iter::once(combined_next.unwrap_or((0, 0, 0, 0, 0)))
                     .into_iter()
                     .chain(combined)
             };
