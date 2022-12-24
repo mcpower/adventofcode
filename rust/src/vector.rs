@@ -1,4 +1,4 @@
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Vec2(pub i64, pub i64);
 
 impl Vec2 {
@@ -53,6 +53,14 @@ impl std::ops::SubAssign<Vec2> for Vec2 {
     fn sub_assign(&mut self, rhs: Vec2) {
         self.0 -= rhs.0;
         self.1 -= rhs.1;
+    }
+}
+
+impl std::ops::Mul<Vec2> for i64 {
+    type Output = Vec2;
+
+    fn mul(self, rhs: Vec2) -> Self::Output {
+        Vec2(self * rhs.0, self * rhs.1)
     }
 }
 

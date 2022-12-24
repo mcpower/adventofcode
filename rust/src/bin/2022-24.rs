@@ -206,11 +206,19 @@ fn main() {
     run_samples_and_arg(solve, SAMPLES);
 }
 
-const SAMPLES: &[&str] = &[r"
+const SAMPLES: &[&str] = &[
+    r"
 #.######
 #>>.<^<#
 #.<..<<#
 #>v.><>#
 #<^v^^>#
 ######.#
-"];
+",
+    r"
+#.##
+#..#
+#..#
+##.#
+",
+];
