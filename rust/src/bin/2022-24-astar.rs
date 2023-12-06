@@ -5,6 +5,7 @@ use std::{
 
 use mcpower_aoc::{
     runner::run_samples_and_arg,
+    utils::lcm,
     vector::{Vec2, FOUR_ADJ},
 };
 
@@ -42,6 +43,7 @@ fn solve(inp: &str, _is_sample: bool) -> (i64, i64) {
     let mut cache = HashMap::<i64, HashSet<Vec2>>::new();
     let start = Vec2(-1, 0);
     let goal = Vec2(inner_rows, inner_cols - 1);
+    let lcm = lcm(inner_rows, inner_cols);
     let f = |(time, pos): SearchNode, goal: Vec2| time + (pos - goal).norm_1();
 
     let mut a_star = |start_node: SearchNode, goal: Vec2| {
@@ -57,7 +59,7 @@ fn solve(inp: &str, _is_sample: bool) -> (i64, i64) {
             // In-lined expand function to save a collect-into-Vec / clone due
             // to FnMut silliness. Saves ~10ms run time.
             let children = {
-                let blizzards = cache.entry(time).or_insert_with(|| {
+                let blizzards = cache.entry(time % lcm).or_insert_with(|| {
                     initial_blizzards
                         .iter()
                         .map(|&(initial_pos, delta)| {
