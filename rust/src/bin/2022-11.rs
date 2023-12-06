@@ -182,7 +182,7 @@ fn solve(inp: &str, _is_sample: bool) -> (usize, usize) {
             .flat_map(|(i, monkey)| monkey.initial_items.iter().map(move |item| (i, item)))
             .map(|(i, item)| {
                 let mut cur_monkey = i as u8;
-                let mut cur_item = *item as u64;
+                let mut cur_item = *item;
                 // vec of "what monkeys threw this item during this 0-indexed round"
                 // as a vector of bitsets
                 let mut monkey_history = vec![];
