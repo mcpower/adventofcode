@@ -1,9 +1,9 @@
 use mcpower_aoc::runner::run_samples_and_arg;
 
-fn solve(inp: &str, _is_sample: bool) -> (i64, i64) {
-    if _is_sample {
-        dbg!(inp);
-    }
+fn solve(
+    #[allow(unused_variables)] inp: &str,
+    #[allow(unused_variables)] is_sample: bool,
+) -> (i64, i64) {
     let part1 = 0;
 
     let part2 = 0;
